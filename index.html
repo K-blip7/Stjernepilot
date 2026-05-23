@@ -143,6 +143,113 @@
     transition: background 0.15s, border-color 0.15s;
   }
   .quick-btn:active { background: rgba(126,224,255,0.3); }
+
+  /* ===== Hall of Fame ===== */
+  .hof-modal {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, #0d0030 0%, #050018 100%);
+    z-index: 100; display: flex; flex-direction: column; align-items: center;
+    padding: calc(var(--safe-top) + 16px) 16px 20px;
+    overflow-y: auto; text-align: center;
+  }
+  .hof-modal h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900;
+    background: linear-gradient(135deg, #ffd84a, #ffaa00);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 4px; letter-spacing: 2px;
+  }
+  .hof-list { width: 100%; max-width: 340px; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; }
+  .hof-entry {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 12px 16px;
+    animation: hof-slide 0.4s ease-out both;
+  }
+  @keyframes hof-slide { from { opacity:0; transform:translateX(-30px); } to { opacity:1; transform:translateX(0); } }
+  .hof-entry.rank-1 { border-color: #ffd84a88; background: rgba(255,216,74,0.1); }
+  .hof-entry.rank-2 { border-color: #aaaaaa88; background: rgba(170,170,170,0.08); }
+  .hof-entry.rank-3 { border-color: #cd7f3288; background: rgba(205,127,50,0.08); }
+  .hof-rank { font-size: 28px; min-width: 36px; }
+  .hof-info { flex: 1; text-align: left; }
+  .hof-name { font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 900; color: #fff; }
+  .hof-title { font-family: 'Exo 2', sans-serif; font-size: 11px; color: #7ee0ff; letter-spacing: 1px; }
+  .hof-score { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: #ffd84a; text-shadow: 0 0 10px #ffd84a88; }
+  .hof-empty { font-family: 'Exo 2', sans-serif; font-size: 16px; color: #555; margin: 30px 0; }
+
+  /* Ny rekord-animasjon */
+  .new-record-overlay {
+    position: absolute; inset: 0; z-index: 80; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(255,216,74,0.3), transparent 70%);
+    animation: record-bg 3.5s ease-out forwards;
+  }
+  @keyframes record-bg { 0%{opacity:0;} 20%{opacity:1;} 80%{opacity:1;} 100%{opacity:0;} }
+  .new-record-text {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 36px;
+    color: #ffd84a; text-shadow: 0 0 30px #ffd84a, 4px 4px 0 #000;
+    text-align: center; line-height: 1.3;
+    animation: record-pop 3.5s ease-out forwards;
+  }
+  @keyframes record-pop {
+    0%   { opacity:0; transform:scale(0.3) rotate(-10deg); }
+    20%  { opacity:1; transform:scale(1.2) rotate(2deg); }
+    35%  { transform:scale(1) rotate(0); }
+    80%  { opacity:1; }
+    100% { opacity:0; transform:scale(1.1); }
+  }
+  .confetti-piece {
+    position: absolute; width: 10px; height: 10px; border-radius: 2px;
+    pointer-events: none; animation: confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { opacity:1; transform:translateY(0) rotate(0); }
+    100% { opacity:0; transform:translateY(100vh) rotate(720deg); }
+  }
+
+  /* ===== Statistikk ===== */
+  .stats-modal {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, #001a0d 0%, #050018 100%);
+    z-index: 100; display: flex; flex-direction: column; align-items: center;
+    padding: calc(var(--safe-top) + 16px) 16px 20px;
+    overflow-y: auto; text-align: center;
+  }
+  .stats-modal h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900;
+    color: #4aff8e; text-shadow: 0 0 20px #4aff8e88;
+    margin-bottom: 4px; letter-spacing: 2px;
+  }
+  .stats-summary {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    width: 100%; max-width: 340px; margin: 14px 0;
+  }
+  .stat-box { background: rgba(74,255,142,0.07); border: 1px solid #4aff8e33; border-radius: 12px; padding: 12px 8px; }
+  .stat-box .stat-val { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; color: #4aff8e; text-shadow: 0 0 10px #4aff8e88; }
+  .stat-box .stat-label { font-family: 'Exo 2', sans-serif; font-size: 11px; color: #7ee0ff; margin-top: 2px; letter-spacing: 1px; }
+  .stats-table-title { font-family: 'Orbitron', sans-serif; font-size: 13px; color: #4aff8e; letter-spacing: 2px; margin: 8px 0 10px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; width: 100%; max-width: 340px; margin-bottom: 8px; }
+  .stats-cell-header { font-family: 'Exo 2', sans-serif; font-size: 10px; font-weight: 900; color: #7ee0ff; padding: 4px 0; text-align: center; }
+  .stats-cell {
+    aspect-ratio: 1; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Exo 2', sans-serif; font-size: 8px; font-weight: 700;
+    cursor: default; transition: transform 0.15s;
+  }
+  .stats-cell:active { transform: scale(1.4); }
+  .stats-cell.never { background: rgba(255,255,255,0.05); color: #333; }
+  .stats-cell.great { background: rgba(74,255,142,0.85); color: #003310; }
+  .stats-cell.good  { background: rgba(255,235,59,0.75);  color: #332200; }
+  .stats-cell.hard  { background: rgba(255,100,80,0.85);  color: #fff; }
+  .stats-legend { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-family: 'Exo 2', sans-serif; font-size: 11px; color: #aaa; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .reset-stats-btn {
+    padding: 10px 22px; font-family: 'Exo 2', sans-serif; font-size: 14px; font-weight: 700;
+    border: 2px solid #ff555566; border-radius: 30px;
+    background: rgba(255,50,50,0.15); color: #ff8888; cursor: pointer; margin-top: 8px;
+  }
+  .reset-stats-btn:active { background: rgba(255,50,50,0.3); }
+
   .stars {
     position: absolute; inset: 0; overflow: hidden;
     background-image:
@@ -758,7 +865,36 @@
     <p id="active-mission-label" style="font-family:'Exo 2',sans-serif;font-size:13px;color:#7ee0ff;margin-top:4px;min-height:18px;"></p>
     <button class="big-btn" onclick="startGame()">🚀 AVFYR RAKETTEN!</button>
     <button class="big-btn" style="background: linear-gradient(135deg, #ffd84a, #ff9933); border-color: #ffd84a; color: #050018; margin-top: 12px;" onclick="showMissionSelect()">🪐 VELG OPPDRAG</button>
-    <button class="big-btn" style="background: linear-gradient(135deg, #7ee0ff, #5566ff); border-color: #7ee0ff; color: #fff; margin-top: 12px;" onclick="showHangar()">HANGAR</button>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="big-btn" style="background: linear-gradient(135deg, #7ee0ff, #5566ff); border-color: #7ee0ff; color: #fff; padding: 14px 20px; font-size: 18px;" onclick="showHangar()">🚀 HANGAR</button>
+      <button class="big-btn" style="background: linear-gradient(135deg, #ffd84a, #ff9933); border-color: #ffd84a; color: #050018; padding: 14px 20px; font-size: 18px;" onclick="showHallOfFame()">🏆 REKORDER</button>
+      <button class="big-btn" style="background: linear-gradient(135deg, #4aff8e, #22cc66); border-color: #4aff8e; color: #050018; padding: 14px 20px; font-size: 18px;" onclick="showStats()">📊 STATS</button>
+    </div>
+  </div>
+
+  <!-- Hall of Fame -->
+  <div class="hof-modal" id="hof-modal" style="display:none;">
+    <h1>🏆 HALL OF FAME</h1>
+    <div class="subtitle">GALAKTISKE REKORDER</div>
+    <div class="hof-list" id="hof-list"></div>
+    <button class="big-btn" onclick="closeHallOfFame()" style="margin-top:8px;">TILBAKE</button>
+  </div>
+
+  <!-- Statistikk -->
+  <div class="stats-modal" id="stats-modal" style="display:none;">
+    <h1>📡 OPPDRAGSRAPPORT</h1>
+    <div class="subtitle">DIN GALAKTISKE STATISTIKK</div>
+    <div class="stats-summary" id="stats-summary"></div>
+    <div class="stats-table-title">GANGETABELL-KART</div>
+    <div class="stats-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(74,255,142,0.85)"></div> Kjempe bra!</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,235,59,0.75)"></div> OK</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,100,80,0.85)"></div> Øv mer!</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.05)"></div> Ikke sett</div>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <button class="reset-stats-btn" onclick="confirmResetStats()">🗑️ Nullstill statistikk</button>
+    <button class="big-btn" onclick="closeStats()" style="margin-top:12px;">TILBAKE</button>
   </div>
 
   <!-- Planet-oppdrag-velger -->
@@ -1255,6 +1391,8 @@ function spawnAsteroid() {
   const problem = generateProblem();
   STATE.currentAnswer = problem.answer;
   STATE.currentProblem = `${problem.a}×${problem.b}`;
+  STATE.currentA = problem.a;
+  STATE.currentB = problem.b;
 
   const enemyType = pickEnemyType();
   STATE.currentEnemy = enemyType;
@@ -1335,6 +1473,7 @@ function handleAnswer(choice, btn) {
     const points = basePoints * multiplier;
     STATE.score += points;
     STATE.problemsAnswered++;
+    recordAnswer(STATE.currentA, STATE.currentB, true);
     updateHUD();
     const feedbackText = multiplier > 1 ? `+${points}  ×${multiplier}!` : `+${points}`;
     showFeedback(feedbackText, multiplier > 1 ? '#ffd84a' : '#4aff8e');
@@ -1364,6 +1503,7 @@ function handleAnswer(choice, btn) {
       if (parseInt(b.textContent) === STATE.currentAnswer) b.classList.add('correct');
     });
     showFeedback(`${STATE.currentProblem} = ${STATE.currentAnswer}`, '#ff6b9d');
+    recordAnswer(STATE.currentA, STATE.currentB, false);
     STATE.streak = 0;
     // Farten går ned ett hakk (10%) ved feil, ikke full reset
     if (STATE.superMode) {
@@ -1709,15 +1849,23 @@ function endGame() {
   document.getElementById('quit-btn').style.display = 'none';
   document.getElementById('final-score').textContent = STATE.score;
   document.getElementById('final-stars').textContent = STATE.stars;
-  const best = parseInt(localStorage.getItem('bestScore') || '0');
-  if (STATE.score > best) {
-    localStorage.setItem('bestScore', STATE.score);
-    document.getElementById('best-line').textContent = `🏆 NY REKORD!`;
+
+  // Sjekk om scoren kvalifiserer til Hall of Fame
+  if (checkHallOfFame(STATE.score)) {
+    document.getElementById('gameover').style.display = 'flex';
+    document.getElementById('best-line').textContent = '🏆 Du er med i Hall of Fame!';
+    saveProgress();
+    setTimeout(() => promptHallOfFame(STATE.score), 500);
   } else {
-    document.getElementById('best-line').textContent = `Rekord: ${best} poeng`;
+    const best = parseInt(localStorage.getItem('bestScore') || '0');
+    if (STATE.score > best) localStorage.setItem('bestScore', STATE.score);
+    const hof = loadHallOfFame();
+    const topScore = hof.length > 0 ? hof[0].score : 0;
+    document.getElementById('best-line').textContent = topScore > 0
+      ? `🥇 Rekord: ${topScore} poeng` : '';
+    document.getElementById('gameover').style.display = 'flex';
+    saveProgress();
   }
-  document.getElementById('gameover').style.display = 'flex';
-  saveProgress();
 }
 
 function resetGame() {
@@ -1953,6 +2101,256 @@ function updateActiveMissionLabel() {
 
 loadActivePlanets();
 updateActiveMissionLabel();
+
+// ===== Hall of Fame =====
+const HOF_TITLES = [
+  '🥇 GALAKTISK MESTER',
+  '🥈 STJERNEKAPTEIN',
+  '🥉 ROMHELT',
+  '4️⃣ ASTRONAUT',
+  '5️⃣ ROMKADET',
+];
+const HOF_RANKS = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+
+function loadHallOfFame() {
+  try { return JSON.parse(localStorage.getItem('hallOfFame') || '[]'); } catch(e) { return []; }
+}
+
+function saveHallOfFame(list) {
+  try { localStorage.setItem('hallOfFame', JSON.stringify(list)); } catch(e) {}
+}
+
+function checkHallOfFame(score) {
+  if (score <= 0) return false;
+  const list = loadHallOfFame();
+  const lowest = list.length < 5 ? 0 : list[list.length - 1].score;
+  return list.length < 5 || score > lowest;
+}
+
+function addToHallOfFame(name, score) {
+  const list = loadHallOfFame();
+  list.push({ name, score, date: new Date().toLocaleDateString('no-NO') });
+  list.sort((a,b) => b.score - a.score);
+  list.splice(5); // behold topp 5
+  saveHallOfFame(list);
+  return list.findIndex(e => e.name === name && e.score === score);
+}
+
+function showHallOfFame(fromGame = false) {
+  hideAllModals();
+  document.getElementById('hof-modal').style.display = 'flex';
+  const list = loadHallOfFame();
+  const container = document.getElementById('hof-list');
+  container.innerHTML = '';
+  if (list.length === 0) {
+    container.innerHTML = '<div class="hof-empty">🌌 Ingen rekorder ennå...<br>Avfyr raketten og sett den første!</div>';
+    return;
+  }
+  list.forEach((entry, i) => {
+    const div = document.createElement('div');
+    div.className = `hof-entry rank-${i+1}`;
+    div.style.animationDelay = (i * 0.1) + 's';
+    div.innerHTML = `
+      <div class="hof-rank">${HOF_RANKS[i] || '⭐'}</div>
+      <div class="hof-info">
+        <div class="hof-name">${entry.name}</div>
+        <div class="hof-title">${HOF_TITLES[i] || 'ROMKADET'}</div>
+        <div style="font-family:'Exo 2',sans-serif;font-size:10px;color:#555;">${entry.date || ''}</div>
+      </div>
+      <div class="hof-score">${entry.score}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function closeHallOfFame() {
+  document.getElementById('hof-modal').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+}
+
+function showNewRecordAnimation(rank) {
+  const overlay = document.createElement('div');
+  overlay.className = 'new-record-overlay';
+  const titles = ['GALAKTISK MESTER!', 'STJERNEKAPTEIN!', 'ROMHELT!', 'ASTRONAUT!', 'ROMKADET!'];
+  overlay.innerHTML = `<div class="new-record-text">🏆 NY REKORD! 🏆<br>${titles[rank] || 'ROMHELT!'}</div>`;
+
+  // Konfetti
+  const colors = ['#ffd84a','#ff6b9d','#7ee0ff','#4aff8e','#ff9933','#fff'];
+  for (let i = 0; i < 40; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = (Math.random() * 100) + '%';
+    piece.style.top = '-20px';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    piece.style.animationDelay = (Math.random() * 0.5) + 's';
+    overlay.appendChild(piece);
+  }
+
+  document.getElementById('game').appendChild(overlay);
+  AUDIO.win();
+  setTimeout(() => overlay.remove(), 3600);
+}
+
+// Spør om navn og legg til i Hall of Fame
+function promptHallOfFame(score) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-box" style="max-width:300px;">
+      <div style="font-size:48px;margin-bottom:8px;">🏆</div>
+      <p style="color:#ffd84a;font-family:'Orbitron',sans-serif;font-size:18px;margin-bottom:8px;">NY REKORD!</p>
+      <p>Skriv inn navnet ditt:</p>
+      <input id="hof-name-input" type="text" maxlength="12"
+        style="width:100%;padding:10px;margin:10px 0;border-radius:10px;border:2px solid #7ee0ff;
+               background:#0a0520;color:#fff;font-family:'Exo 2',sans-serif;font-size:18px;
+               text-align:center;outline:none;" placeholder="Ditt navn" />
+      <div class="confirm-btns" style="margin-top:4px;">
+        <button class="confirm-yes" style="background:linear-gradient(135deg,#ffd84a,#ff9933);border-color:#ffd84a;color:#000;"
+          onclick="submitHallOfFame(${score})">✅ LAGRE</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game').appendChild(overlay);
+  setTimeout(() => {
+    const inp = document.getElementById('hof-name-input');
+    if (inp) inp.focus();
+  }, 100);
+}
+
+function submitHallOfFame(score) {
+  const input = document.getElementById('hof-name-input');
+  const name = (input ? input.value.trim() : '') || 'Romhelt';
+  const overlay = document.querySelector('.confirm-overlay');
+  if (overlay) overlay.remove();
+  const rank = addToHallOfFame(name, score);
+  showNewRecordAnimation(rank);
+}
+
+// ===== Statistikk =====
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('mathStats') || '{}'); } catch(e) { return {}; }
+}
+
+function saveStats(stats) {
+  try { localStorage.setItem('mathStats', JSON.stringify(stats)); } catch(e) {}
+}
+
+function recordAnswer(a, b, correct) {
+  const stats = loadStats();
+  const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+  if (!stats[key]) stats[key] = { correct: 0, wrong: 0 };
+  if (correct) stats[key].correct++;
+  else stats[key].wrong++;
+  saveStats(stats);
+}
+
+function showStats() {
+  hideAllModals();
+  document.getElementById('stats-modal').style.display = 'flex';
+  buildStatsView();
+}
+
+function closeStats() {
+  document.getElementById('stats-modal').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+}
+
+function buildStatsView() {
+  const stats = loadStats();
+
+  // Summer-statistikk
+  let totalCorrect = 0, totalWrong = 0, bestStreak = STATE.bestStreak || 0;
+  let totalSeen = 0;
+  Object.values(stats).forEach(v => {
+    totalCorrect += v.correct;
+    totalWrong += v.wrong;
+    if (v.correct + v.wrong > 0) totalSeen++;
+  });
+
+  const summary = document.getElementById('stats-summary');
+  summary.innerHTML = `
+    <div class="stat-box">
+      <div class="stat-val">${totalCorrect}</div>
+      <div class="stat-label">✅ RIKTIGE SVAR</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">${totalWrong}</div>
+      <div class="stat-label">❌ FEIL SVAR</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">${totalSeen}</div>
+      <div class="stat-label">🔭 STYKKER SETT</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val">${STATE.bestStreak || 0}</div>
+      <div class="stat-label">🔥 BESTE STREAK</div>
+    </div>
+  `;
+
+  // 10x10 grid
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  // Topprader med tall 1-10
+  for (let col = 1; col <= 10; col++) {
+    const h = document.createElement('div');
+    h.className = 'stats-cell-header';
+    h.textContent = col;
+    grid.appendChild(h);
+  }
+  // 10 rader
+  for (let row = 1; row <= 10; row++) {
+    for (let col = 1; col <= 10; col++) {
+      const key = `${Math.min(row,col)}x${Math.max(row,col)}`;
+      const data = stats[key] || { correct: 0, wrong: 0 };
+      const total = data.correct + data.wrong;
+      const cell = document.createElement('div');
+      cell.className = 'stats-cell';
+      if (total === 0) {
+        cell.classList.add('never');
+        cell.textContent = '';
+        cell.title = `${row}×${col}: Ikke sett`;
+      } else {
+        const pct = data.correct / total;
+        if (pct >= 0.8) cell.classList.add('great');
+        else if (pct >= 0.5) cell.classList.add('good');
+        else cell.classList.add('hard');
+        cell.textContent = total;
+        cell.title = `${row}×${col}: ${data.correct}✅ ${data.wrong}❌`;
+      }
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function confirmResetStats() {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.style.zIndex = '110';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <p>Er du sikker på at du vil slette all statistikk? Dette kan ikke angres.</p>
+      <div class="confirm-btns">
+        <button class="confirm-yes" onclick="resetStats()">🗑️ JA, SLETT</button>
+        <button class="confirm-no" onclick="this.closest('.confirm-overlay').remove()">NEI</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game').appendChild(overlay);
+}
+
+function resetStats() {
+  try { localStorage.removeItem('mathStats'); } catch(e) {}
+  document.querySelector('.confirm-overlay')?.remove();
+  buildStatsView();
+}
+
+function hideAllModals() {
+  ['welcome','hof-modal','stats-modal','hangar-modal','gameover','mission-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
 
 // Registrer service worker for offline-funksjonalitet
 if ('serviceWorker' in navigator) {
