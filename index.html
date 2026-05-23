@@ -227,8 +227,9 @@
   .stat-box .stat-val { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; color: #4aff8e; text-shadow: 0 0 10px #4aff8e88; }
   .stat-box .stat-label { font-family: 'Exo 2', sans-serif; font-size: 11px; color: #7ee0ff; margin-top: 2px; letter-spacing: 1px; }
   .stats-table-title { font-family: 'Orbitron', sans-serif; font-size: 13px; color: #4aff8e; letter-spacing: 2px; margin: 8px 0 10px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; width: 100%; max-width: 340px; margin-bottom: 8px; }
-  .stats-cell-header { font-family: 'Exo 2', sans-serif; font-size: 10px; font-weight: 900; color: #7ee0ff; padding: 4px 0; text-align: center; }
+  .stats-grid { display: grid; grid-template-columns: auto repeat(10, 1fr); gap: 3px; width: 100%; max-width: 340px; margin-bottom: 8px; }
+  .stats-cell-header { font-family: 'Exo 2', sans-serif; font-size: 10px; font-weight: 900; color: #7ee0ff; padding: 4px 2px; text-align: center; }
+  .stats-cell-header.row-header { color: #ff9ec7; min-width: 18px; }
   .stats-cell {
     aspect-ratio: 1; border-radius: 5px;
     display: flex; align-items: center; justify-content: center;
@@ -2288,18 +2289,31 @@ function buildStatsView() {
     </div>
   `;
 
-  // 10x10 grid
+  // 10x10 grid med rownummer og kolonnetall
   const grid = document.getElementById('stats-grid');
   grid.innerHTML = '';
-  // Topprader med tall 1-10
+
+  // Øverste rad: tomt hjørne + kolonnetall 1-10
+  const corner = document.createElement('div');
+  corner.className = 'stats-cell-header';
+  corner.textContent = '×';
+  corner.style.color = '#ffffff44';
+  grid.appendChild(corner);
   for (let col = 1; col <= 10; col++) {
     const h = document.createElement('div');
     h.className = 'stats-cell-header';
     h.textContent = col;
     grid.appendChild(h);
   }
-  // 10 rader
+
+  // 10 rader med radnummer til venstre
   for (let row = 1; row <= 10; row++) {
+    // Radnummer
+    const rowHeader = document.createElement('div');
+    rowHeader.className = 'stats-cell-header row-header';
+    rowHeader.textContent = row;
+    grid.appendChild(rowHeader);
+
     for (let col = 1; col <= 10; col++) {
       const key = `${Math.min(row,col)}x${Math.max(row,col)}`;
       const data = stats[key] || { correct: 0, wrong: 0 };
