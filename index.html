@@ -315,7 +315,7 @@
     color: #7ee0ff;
     font-size: 18px;
     cursor: pointer;
-    z-index: 11;
+    z-index: 150; /* alltid over alle skjermer/dialoger, siden lyd/musikk skal kunne slås av overalt */
     display: flex; align-items: center; justify-content: center;
   }
   .sound-toggle:active { transform: scale(0.9); }
@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v13';
+const APP_VERSION = 'v14';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
