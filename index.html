@@ -250,6 +250,24 @@
     background: rgba(255,50,50,0.15); color: #ff8888; cursor: pointer; margin-top: 8px;
   }
   .reset-stats-btn:active { background: rgba(255,50,50,0.3); }
+  .full-reset-btn {
+    display: block; border-color: #ff2222aa; background: rgba(255,20,20,0.2); color: #ffaaaa;
+    font-size: 12px; padding: 10px 16px;
+  }
+  .full-reset-btn:active { background: rgba(255,20,20,0.4); }
+
+  /* ===== Merker (mestrede gangetabeller) ===== */
+  .badges-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 340px; margin: 0 0 16px; }
+  .badge {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05); border: 2px solid transparent;
+  }
+  .badge .badge-emoji { font-size: 20px; filter: grayscale(85%) brightness(0.5); line-height: 1; }
+  .badge .badge-num { font-family: 'Exo 2', sans-serif; font-size: 9px; font-weight: 900; color: #555; margin-top: 2px; }
+  .badge.earned { border-color: #ffd84a88; background: rgba(255,216,74,0.12); box-shadow: 0 0 12px #ffd84a55; }
+  .badge.earned .badge-emoji { filter: none; }
+  .badge.earned .badge-num { color: #ffd84a; }
 
   .stars {
     position: absolute; inset: 0; overflow: hidden;
@@ -888,6 +906,8 @@
     <h1>📡 OPPDRAGSRAPPORT</h1>
     <div class="subtitle">DIN GALAKTISKE STATISTIKK</div>
     <div class="stats-summary" id="stats-summary"></div>
+    <div class="stats-table-title">MERKER</div>
+    <div class="badges-row" id="badges-row"></div>
     <div class="stats-table-title">GANGETABELL-KART</div>
     <div class="stats-legend">
       <div class="legend-item"><div class="legend-dot" style="background:rgba(74,255,142,0.85)"></div> Kjempe bra!</div>
@@ -897,6 +917,7 @@
     </div>
     <div class="stats-grid" id="stats-grid"></div>
     <button class="reset-stats-btn" onclick="confirmResetStats()">🗑️ Nullstill statistikk</button>
+    <button class="reset-stats-btn full-reset-btn" onclick="confirmFullReset()">🚨 Nullstill ALT (mynter, skip, rekorder...)</button>
     <button class="big-btn" onclick="closeStats()" style="margin-top:12px;">TILBAKE</button>
   </div>
 
@@ -934,7 +955,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v7';
+const APP_VERSION = 'v8';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1298,16 +1319,45 @@ function shipSVG(color, idx = 0) {
 }
 
 // ===== Gangetabell-logikk =====
+// Vekter 1-10 etter hvor godt spilleren mestrer a×b (fra Oppdragsrapport-statistikken),
+// slik at vanskelige stykker dukker litt oftere opp - uten å bli ren pugging av det vanskelige.
+function pickWeightedFactor(a, stats) {
+  const weights = [];
+  for (let b = 1; b <= 10; b++) {
+    const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+    const data = stats[key];
+    let w = 2; // aldri sett - litt ekstra vekt for å utforske nye stykker
+    if (data) {
+      const total = data.correct + data.wrong;
+      if (total > 0) {
+        const pct = data.correct / total;
+        if (pct < 0.5) w = 4;        // vanskelig - vis oftere
+        else if (pct < 0.8) w = 2;   // ok
+        else w = 0.6;                // godt mestret - vis sjeldnere, men ikke aldri
+      }
+    }
+    weights.push(w);
+  }
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return i + 1;
+  }
+  return 10;
+}
+
 function generateProblem() {
   const activeList = [...activePlanets].sort((a,b) => a-b);
+  const stats = loadStats();
 
   let a, b, key;
   let attempts = 0;
   do {
     // Ett tall MÅ komme fra aktivt oppdrag
     a = activeList[Math.floor(Math.random() * activeList.length)];
-    // Andre tall alltid fra 1-10 så man øver alle kombinasjoner
-    b = Math.floor(Math.random() * 10) + 1;
+    // Andre tall vektet mot det spilleren sliter mest med
+    b = pickWeightedFactor(a, stats);
     // Bytt om av og til så rekkefølgen varierer (6×3 og 3×6 er samme stykke)
     if (Math.random() < 0.5) { const tmp = a; a = b; b = tmp; }
     key = `${Math.min(a,b)}x${Math.max(a,b)}`;
@@ -1468,6 +1518,7 @@ function handleAnswer(choice, btn) {
 
   if (choice === STATE.currentAnswer) {
     btn.classList.add('correct');
+    if (navigator.vibrate) navigator.vibrate(35);
     shootLaser();
     const enemy = STATE.currentEnemy;
     // Spill dyrelyd hvis det er et dyr
@@ -1846,6 +1897,7 @@ function loseLife() {
   STATE.lives--;
   STATE.streak = 0;
   updateHUD();
+  if (navigator.vibrate) navigator.vibrate(150);
   // Skjelv-effekt
   document.getElementById('game').animate([
     { transform: 'translateX(0)' },
@@ -2287,8 +2339,37 @@ function closeStats() {
   document.getElementById('welcome').style.display = 'flex';
 }
 
+// En gangetabell er mestret når alle 10 stykkene (n×1 til n×10) har minst
+// 3 forsøk og minst 80% riktige svar - unngår at ett heldig gjett gir merke
+function isTableMastered(n, stats) {
+  for (let b = 1; b <= 10; b++) {
+    const key = `${Math.min(n,b)}x${Math.max(n,b)}`;
+    const data = stats[key];
+    if (!data) return false;
+    const total = data.correct + data.wrong;
+    if (total < 3) return false;
+    if (data.correct / total < 0.8) return false;
+  }
+  return true;
+}
+
+function buildBadgesRow(stats) {
+  const row = document.getElementById('badges-row');
+  if (!row) return;
+  row.innerHTML = '';
+  PLANETS.forEach(p => {
+    const mastered = isTableMastered(p.num, stats);
+    const badge = document.createElement('div');
+    badge.className = 'badge' + (mastered ? ' earned' : '');
+    badge.innerHTML = `<div class="badge-emoji">${p.emoji}</div><div class="badge-num">${p.num}</div>`;
+    badge.title = mastered ? `${p.num}-gangen mestret!` : `${p.num}-gangen: øv mer for merke (80%+ riktig)`;
+    row.appendChild(badge);
+  });
+}
+
 function buildStatsView() {
   const stats = loadStats();
+  buildBadgesRow(stats);
 
   // Summer-statistikk
   let totalCorrect = 0, totalWrong = 0, bestStreak = STATE.bestStreak || 0;
@@ -2387,6 +2468,46 @@ function resetStats() {
   try { localStorage.removeItem('mathStats'); } catch(e) {}
   document.querySelector('.confirm-overlay')?.remove();
   buildStatsView();
+}
+
+// ===== Full nullstilling (alt: statistikk, rekorder, mynter, skip...) =====
+// To bekreftelsessteg siden dette er uopprettelig og sletter mer enn statistikk-knappen over
+function confirmFullReset() {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.style.zIndex = '120';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <p>⚠️ Dette sletter <strong>alt</strong> i appen: gullmynter, opplåste skip, Hall of Fame-rekorder og statistikk. Er du sikker?</p>
+      <div class="confirm-btns">
+        <button class="confirm-yes" onclick="confirmFullResetStep2()">Ja, fortsett</button>
+        <button class="confirm-no" onclick="this.closest('.confirm-overlay').remove()">Avbryt</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game').appendChild(overlay);
+}
+
+function confirmFullResetStep2() {
+  document.querySelector('.confirm-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.style.zIndex = '120';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <p style="color:#ff8888;">🚨 Siste sjanse! Dette kan <strong>ikke</strong> angres - alt blir borte for godt.</p>
+      <div class="confirm-btns">
+        <button class="confirm-yes" style="background:linear-gradient(135deg,#ff3333,#990000);border-color:#ff3333;" onclick="fullReset()">🗑️ SLETT ALT</button>
+        <button class="confirm-no" onclick="this.closest('.confirm-overlay').remove()">Avbryt</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game').appendChild(overlay);
+}
+
+function fullReset() {
+  try { localStorage.clear(); } catch(e) {}
+  location.reload();
 }
 
 function hideAllModals() {
