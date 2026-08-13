@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v15';
+const APP_VERSION = 'v16';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1119,13 +1119,27 @@ updateSoundIcon();
 
 // ===== Bakgrunnsmusikk (kun på hovedskjerm/menyer, stoppes i selve spillingen) =====
 // Bruker samme lyd-av/på-knapp/innstilling som resten av lydene (AUDIO.enabled)
+// Fem 8-dels fraser satt sammen til én lengre melodi (samme tempo/energi som før,
+// men ~5x lenger før den repeterer seg selv - hver frase flytter tonearten litt,
+// og siste frase vender hjem til start-frasen igjen)
+const MUSIC_PHRASE_A = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 440.00, 523.25]; // C5 E5 G5 E5 D5 C5 A4 C5
+const MUSIC_PHRASE_B = [587.33, 698.46, 880.00, 698.46, 659.25, 587.33, 493.88, 587.33]; // D5 F5 A5 F5 E5 D5 B4 D5
+const MUSIC_PHRASE_C = [659.25, 783.99, 987.77, 783.99, 698.46, 659.25, 523.25, 659.25]; // E5 G5 B5 G5 F5 E5 C5 E5
+const MUSIC_PHRASE_D = [783.99, 698.46, 659.25, 587.33, 523.25, 587.33, 659.25, 523.25]; // G5 F5 E5 D5 C5 D5 E5 C5
+const MUSIC_PHRASE_E = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 392.00, 523.25]; // C5 E5 G5 E5 D5 C5 G4 C5 (hjem igjen)
+const MUSIC_BASS_A = [130.81, 0, 0, 0, 174.61, 0, 0, 0]; // C3 ... F3 ...
+const MUSIC_BASS_B = [146.83, 0, 0, 0, 196.00, 0, 0, 0]; // D3 ... G3 ...
+const MUSIC_BASS_C = [164.81, 0, 0, 0, 220.00, 0, 0, 0]; // E3 ... A3 ...
+const MUSIC_BASS_D = [196.00, 0, 0, 0, 130.81, 0, 0, 0]; // G3 ... C3 ...
+const MUSIC_BASS_E = [130.81, 0, 0, 0, 174.61, 0, 0, 0]; // C3 ... F3 ...
+
 const MUSIC = {
   playing: false,    // om melodi-loopen faktisk kjører akkurat nå
   shouldPlay: false, // om vi ØNSKER musikk her (styres av startGame/quitGame/etc.)
   timeoutId: null,
   // Rask, energisk 8-dels riff (chiptune-følelse) + enkel bass-puls under
-  lead: [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 440.00, 523.25], // C5 E5 G5 E5 D5 C5 A4 C5
-  bass: [130.81, 0, 0, 0, 174.61, 0, 130.81, 0], // C3 ... F3 ... C3 ...
+  lead: [...MUSIC_PHRASE_A, ...MUSIC_PHRASE_B, ...MUSIC_PHRASE_C, ...MUSIC_PHRASE_D, ...MUSIC_PHRASE_E],
+  bass: [...MUSIC_BASS_A, ...MUSIC_BASS_B, ...MUSIC_BASS_C, ...MUSIC_BASS_D, ...MUSIC_BASS_E],
   stepDuration: 0.22,
   start() {
     this.shouldPlay = true;
