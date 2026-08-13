@@ -871,6 +871,7 @@
       <button class="big-btn" style="background: linear-gradient(135deg, #ffd84a, #ff9933); border-color: #ffd84a; color: #050018; padding: 14px 0; font-size: 16px; flex:1;" onclick="showHallOfFame()">🏆 REKORDER</button>
     </div>
     <button class="big-btn" style="background: linear-gradient(135deg, #4aff8e, #22cc66); border-color: #4aff8e; color: #050018; margin-top: 10px; width:100%; max-width:320px; font-size: 16px;" onclick="showStats()">📊 OPPDRAGSRAPPORT</button>
+    <div id="app-version" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 6px); right:12px; font-family:'Exo 2',sans-serif; font-size:10px; color:#ffffff33; letter-spacing:1px;"></div>
   </div>
 
   <!-- Hall of Fame -->
@@ -931,6 +932,9 @@
 </div>
 
 <script>
+// Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
+const APP_VERSION = 'v4';
+
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
   ctx: null,
@@ -2117,6 +2121,7 @@ loadActivePlanets();
 updateActiveMissionLabel();
 loadProgress();
 updateHUD();
+document.getElementById('app-version').textContent = APP_VERSION;
 
 // ===== Hall of Fame =====
 const HOF_TITLES = [
