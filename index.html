@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v11';
+const APP_VERSION = 'v12';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1116,6 +1116,34 @@ const AUDIO = {
 };
 AUDIO.load();
 updateSoundIcon();
+
+// ===== Bakgrunnsmusikk (kun på hovedskjerm/menyer, stoppes i selve spillingen) =====
+// Bruker samme lyd-av/på-knapp/innstilling som resten av lydene (AUDIO.enabled)
+const MUSIC = {
+  playing: false,
+  timeoutId: null,
+  notes: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63], // C-E-G-C-G-E arpeggio
+  noteDuration: 0.55,
+  start() {
+    if (this.playing) return;
+    this.playing = true;
+    this._playPhrase();
+  },
+  stop() {
+    this.playing = false;
+    clearTimeout(this.timeoutId);
+  },
+  _playPhrase() {
+    if (!this.playing) return;
+    this.notes.forEach((freq, i) => {
+      AUDIO.tone({ freq, type: 'triangle', duration: this.noteDuration * 0.9, volume: 0.06, attack: 0.08, when: i * this.noteDuration });
+    });
+    const phraseMs = this.notes.length * this.noteDuration * 1000;
+    this.timeoutId = setTimeout(() => this._playPhrase(), phraseMs);
+  }
+};
+// Nettlesere krever brukerinteraksjon før lyd kan spilles - starter alt ved første trykk
+document.addEventListener('pointerdown', () => { AUDIO.init(); MUSIC.start(); }, { once: true });
 
 // ===== State =====
 const STATE = {
@@ -1427,6 +1455,7 @@ function generateChoices(correct) {
 function startGame() {
   AUDIO.init();
   AUDIO.start();
+  MUSIC.stop();
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('gameover').style.display = 'none';
   document.getElementById('quit-btn').style.display = 'flex';
@@ -1984,6 +2013,7 @@ function loseLife() {
 
 function endGame() {
   AUDIO.gameOver();
+  MUSIC.start();
   if (STATE.asteroid) {
     clearTimeout(STATE.asteroidTimeout);
     STATE.asteroid.remove();
@@ -2058,6 +2088,7 @@ function closeHangar() {
   document.getElementById('hangar-modal').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
   renderShip();
+  MUSIC.start();
 }
 
 // ===== Lagring =====
@@ -2120,6 +2151,7 @@ function resumeButtonClicked() {
 function quitGame() {
   const overlay = document.getElementById('confirm-overlay');
   if (overlay) overlay.remove();
+  MUSIC.start();
   // Rydd opp spillet
   if (STATE.asteroid) {
     clearTimeout(STATE.asteroidTimeout);
@@ -2332,6 +2364,7 @@ function showHallOfFame(fromGame = false) {
 function closeHallOfFame() {
   document.getElementById('hof-modal').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
+  MUSIC.start();
 }
 
 function showNewRecordAnimation(rank) {
@@ -2422,6 +2455,7 @@ function showStats() {
 function closeStats() {
   document.getElementById('stats-modal').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
+  MUSIC.start();
 }
 
 // En gangetabell er mestret når alle 10 stykkene (n×1 til n×10) har minst
