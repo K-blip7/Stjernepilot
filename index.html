@@ -292,8 +292,8 @@
   /* HUD */
   .hud {
     position: absolute; top: 0; left: 0; right: 0;
-    /* Ekstra høyre-padding holder mynt-telleren klar av lyd-/avslutt-knappene */
-    padding: calc(env(safe-area-inset-top, 0px) + 14px) 100px 14px 18px;
+    /* Ekstra høyre-padding holder mynt-telleren klar av lyd-/pause-/avslutt-knappene */
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 144px 14px 18px;
     display: flex; justify-content: space-between; align-items: center;
     font-family: 'Orbitron', sans-serif;
     z-index: 10;
@@ -335,6 +335,34 @@
     display: flex; align-items: center; justify-content: center;
   }
   .quit-btn:active { transform: scale(0.9); }
+
+  .pause-btn {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: 100px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(126,224,255,0.15);
+    border: 1px solid #7ee0ff66;
+    color: #7ee0ff;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 11;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pause-btn:active { transform: scale(0.9); }
+
+  /* ===== Pause-skjerm ===== */
+  .pause-icon {
+    font-size: 80px;
+    margin-bottom: 4px;
+    animation: pause-float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px #7ee0ff88);
+  }
+  @keyframes pause-float {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+  }
 
   /* Bekreftelsesdialog */
   .confirm-overlay {
@@ -871,6 +899,7 @@
   </div>
   <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" title="Lyd av/på">🔊</button>
   <button class="quit-btn" id="quit-btn" onclick="confirmQuit()" title="Avslutt spillet" style="display:none;">🏠</button>
+  <button class="pause-btn" id="pause-btn" onclick="pauseButtonClicked()" title="Pause spillet" style="display:none;">⏸️</button>
 
   <div class="ship" id="ship"></div>
 
@@ -943,6 +972,14 @@
     <button class="big-btn" onclick="closeHangar()">TILBAKE</button>
   </div>
 
+  <!-- Pause -->
+  <div class="modal" id="pause-modal" style="display:none;">
+    <div class="pause-icon">🪐</div>
+    <h1 style="font-size: 32px;">PAUSET</h1>
+    <div class="subtitle">Ta den tiden du trenger!</div>
+    <button class="big-btn" onclick="resumeButtonClicked()">▶️ FORTSETT</button>
+  </div>
+
   <!-- Game over -->
   <div class="modal" id="gameover" style="display:none;">
     <h1>OPPDRAG FULLFØRT!</h1>
@@ -955,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v10';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1393,6 +1430,7 @@ function startGame() {
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('gameover').style.display = 'none';
   document.getElementById('quit-btn').style.display = 'flex';
+  document.getElementById('pause-btn').style.display = 'flex';
   STATE.score = 0;
   STATE.stars = 0;
   STATE.lives = 3;
@@ -1450,6 +1488,49 @@ function updateHUD() {
   document.getElementById('lives').textContent = STATE.lives;
 }
 
+// Setter opp kollisjonstimeren for en asteroide, og husker starttidspunkt/varighet
+// slik at pauseGameplay()/resumeGameplay() kan beregne gjenstående tid korrekt
+function scheduleCollision(asteroid, duration) {
+  STATE.asteroidTimeoutStart = Date.now();
+  STATE.asteroidTimeoutDuration = duration;
+  STATE.asteroidTimeout = setTimeout(() => {
+    if (STATE.asteroid === asteroid) {
+      // Asteroide traff
+      loseLife();
+      asteroid.remove();
+      STATE.asteroid = null;
+      if (STATE.lives > 0) setTimeout(spawnAsteroid, 800);
+    }
+  }, duration);
+}
+
+// Fryser spillet ordentlig: både den synlige fall-animasjonen OG kollisjonstimeren
+// bak kulissene (i motsetning til bare å pause animasjonen, som lot klokken løpe videre)
+function pauseGameplay() {
+  if (STATE.paused) return;
+  STATE.paused = true;
+  if (STATE.asteroid) {
+    STATE.asteroid.getAnimations?.().forEach(a => a.pause());
+    if (STATE.asteroidTimeout) {
+      clearTimeout(STATE.asteroidTimeout);
+      const elapsed = Date.now() - STATE.asteroidTimeoutStart;
+      STATE.asteroidRemaining = Math.max(0, STATE.asteroidTimeoutDuration - elapsed);
+    }
+  }
+}
+
+function resumeGameplay() {
+  if (!STATE.paused) return;
+  STATE.paused = false;
+  if (STATE.asteroid) {
+    STATE.asteroid.getAnimations?.().forEach(a => a.play());
+    if (STATE.asteroidRemaining != null) {
+      scheduleCollision(STATE.asteroid, STATE.asteroidRemaining);
+      STATE.asteroidRemaining = null;
+    }
+  }
+}
+
 function spawnAsteroid() {
   if (STATE.paused) return; // Ikke spawn mens laser-show eller annet pågår
   const game = document.getElementById('game');
@@ -1489,15 +1570,7 @@ function spawnAsteroid() {
   ], { duration, fill: 'forwards', easing: 'linear' });
 
   // Sjekk kollisjon
-  STATE.asteroidTimeout = setTimeout(() => {
-    if (STATE.asteroid === asteroid) {
-      // Asteroide traff
-      loseLife();
-      asteroid.remove();
-      STATE.asteroid = null;
-      if (STATE.lives > 0) setTimeout(spawnAsteroid, 800);
-    }
-  }, duration);
+  scheduleCollision(asteroid, duration);
 
   // Render svar-knapper
   const choices = generateChoices(problem.answer);
@@ -1918,6 +1991,7 @@ function endGame() {
   }
   document.getElementById('answers').innerHTML = '';
   document.getElementById('quit-btn').style.display = 'none';
+  document.getElementById('pause-btn').style.display = 'none';
   document.getElementById('final-score').textContent = STATE.score;
   document.getElementById('final-stars').textContent = STATE.stars;
 
@@ -2009,8 +2083,7 @@ function loadProgress() {
 
 function confirmQuit() {
   // Pause spillet mens vi spør
-  STATE.paused = true;
-  if (STATE.asteroid) STATE.asteroid.getAnimations?.().forEach(a => a.pause());
+  pauseGameplay();
 
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
@@ -2030,8 +2103,18 @@ function confirmQuit() {
 function cancelQuit() {
   const overlay = document.getElementById('confirm-overlay');
   if (overlay) overlay.remove();
-  STATE.paused = false;
-  if (STATE.asteroid) STATE.asteroid.getAnimations?.().forEach(a => a.play());
+  resumeGameplay();
+}
+
+function pauseButtonClicked() {
+  if (!STATE.asteroid) return; // ingenting å pause mellom runder
+  pauseGameplay();
+  document.getElementById('pause-modal').style.display = 'flex';
+}
+
+function resumeButtonClicked() {
+  document.getElementById('pause-modal').style.display = 'none';
+  resumeGameplay();
 }
 
 function quitGame() {
@@ -2045,6 +2128,7 @@ function quitGame() {
   }
   document.getElementById('answers').innerHTML = '';
   document.getElementById('quit-btn').style.display = 'none';
+  document.getElementById('pause-btn').style.display = 'none';
   STATE.paused = false;
   STATE.streak = 0;
   // Gå til hovedmeny
