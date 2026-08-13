@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -2217,7 +2217,22 @@ function quitGame() {
 function toggleSound() {
   const enabled = AUDIO.toggle();
   document.getElementById('sound-toggle').textContent = enabled ? '🔊' : '🔇';
-  if (enabled) AUDIO.tone({ freq: 880, duration: 0.1, volume: 0.15 });
+  if (enabled) {
+    // Lag en frisk lydmotor (init() lager kun ny hvis den forrige ble lukket) og
+    // start musikkfrasen på nytt med en gang - ikke vent på neste naturlige runde
+    AUDIO.init();
+    AUDIO.tone({ freq: 880, duration: 0.1, volume: 0.15 });
+    if (MUSIC.shouldPlay) {
+      clearTimeout(MUSIC.timeoutId);
+      MUSIC.playing = true;
+      MUSIC._playPhrase();
+    }
+  } else if (AUDIO.ctx) {
+    // Lukk lydmotoren helt - stopper alt som alt er planlagt med en gang,
+    // ikke bare fremtidige toner
+    AUDIO.ctx.close().catch(() => {});
+    AUDIO.ctx = null;
+  }
 }
 
 function updateSoundIcon() {
