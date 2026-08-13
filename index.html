@@ -519,7 +519,7 @@
   @keyframes pulse-green { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 
-  /* Stjerne som faller */
+  /* Gullmynt som faller */
   .star-pickup {
     position: absolute;
     font-size: 28px;
@@ -848,7 +848,7 @@
   <div class="hud">
     <div class="hud-item lives">❤️ <span id="lives">3</span></div>
     <div class="hud-item score">⚡ <span id="score">0</span></div>
-    <div class="hud-item stars-count">⭐ <span id="stars">0</span></div>
+    <div class="hud-item stars-count">🪙 <span id="stars">0</span></div>
   </div>
   <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" title="Lyd av/på">🔊</button>
   <button class="quit-btn" id="quit-btn" onclick="confirmQuit()" title="Avslutt spillet" style="display:none;">🏠</button>
@@ -862,7 +862,7 @@
     <h1>STJERNEPILOT</h1>
     <div class="subtitle">– GANGETABELL I VERDENSROMMET –</div>
     <p>Skyt ned asteroider ved å løse gangestykker!</p>
-    <p style="font-size: 14px; color: #ffd84a;">🪨 Asteroide = 1 poeng &nbsp; 🐷 Gris = ×2<br>🐔 Kylling = ×2 &nbsp; 🐮 Ku = ×3 &nbsp; 🛸 UFO = ×5 + bonus ⭐</p>
+    <p style="font-size: 14px; color: #ffd84a;">🪨 Asteroide = 1 poeng &nbsp; 🐷 Gris = ×2<br>🐔 Kylling = ×2 &nbsp; 🐮 Ku = ×3 &nbsp; 🛸 UFO = ×5 + bonus 🪙</p>
     <p id="active-mission-label" style="font-family:'Exo 2',sans-serif;font-size:13px;color:#7ee0ff;margin-top:4px;min-height:18px;"></p>
     <button class="big-btn" onclick="startGame()">🚀 AVFYR RAKETTEN!</button>
     <button class="big-btn" style="background: linear-gradient(135deg, #ffd84a, #ff9933); border-color: #ffd84a; color: #050018; margin-top: 12px;" onclick="showMissionSelect()">🪐 VELG OPPDRAG</button>
@@ -915,6 +915,7 @@
   <div class="modal" id="hangar-modal" style="display:none;">
     <h1 style="font-size: 28px;">HANGAR</h1>
     <div class="subtitle">VELG ROMSKIP</div>
+    <div id="hangar-stars" style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:#ffd84a;text-shadow:0 0 10px #ffd84a88;margin-bottom:12px;"></div>
     <div class="hangar" id="hangar-grid"></div>
     <button class="big-btn" onclick="closeHangar()">TILBAKE</button>
   </div>
@@ -922,7 +923,7 @@
   <!-- Game over -->
   <div class="modal" id="gameover" style="display:none;">
     <h1>OPPDRAG FULLFØRT!</h1>
-    <p>Du fikk <span id="final-score">0</span> poeng og samlet <span id="final-stars">0</span> stjerner!</p>
+    <p>Du fikk <span id="final-score">0</span> poeng og samlet <span id="final-stars">0</span> gullmynter!</p>
     <p id="best-line" style="color: #ffd84a;"></p>
     <button class="big-btn" onclick="resetGame()">SPILL IGJEN</button>
     <button class="big-btn" style="background: linear-gradient(135deg, #7ee0ff, #5566ff); border-color: #7ee0ff; color: #fff; margin-top: 12px;" onclick="showHangar()">HANGAR</button>
@@ -1031,6 +1032,13 @@ const AUDIO = {
     this.tone({ freq: 660, type: 'square', duration: 0.1, volume: 0.15, when: 0.1 });
     this.tone({ freq: 880, type: 'square', duration: 0.15, volume: 0.15, when: 0.2 });
   },
+  // Ny rekord i Hall of Fame - liten fanfare
+  win() {
+    this.tone({ freq: 523, type: 'square', duration: 0.15, volume: 0.2 });
+    this.tone({ freq: 659, type: 'square', duration: 0.15, volume: 0.2, when: 0.15 });
+    this.tone({ freq: 784, type: 'square', duration: 0.15, volume: 0.2, when: 0.3 });
+    this.tone({ freq: 1047, type: 'square', duration: 0.4, volume: 0.25, when: 0.45 });
+  },
   toggle() {
     this.enabled = !this.enabled;
     try { localStorage.setItem('audio_enabled', this.enabled ? '1' : '0'); } catch(e) {}
@@ -1044,6 +1052,7 @@ const AUDIO = {
   }
 };
 AUDIO.load();
+updateSoundIcon();
 
 // ===== State =====
 const STATE = {
@@ -1494,7 +1503,7 @@ function handleAnswer(choice, btn) {
       STATE.speedMultiplier = Math.max(0.3, STATE.speedMultiplier * 0.9);
       showSpeedBoostFlash(true);
     }
-    // UFO gir bonus-stjerne
+    // UFO gir bonus-mynt
     if (enemy && enemy.id === 'ufo') dropStar();
   } else {
     btn.classList.add('wrong');
@@ -1506,6 +1515,10 @@ function handleAnswer(choice, btn) {
     showFeedback(`${STATE.currentProblem} = ${STATE.currentAnswer}`, '#ff6b9d');
     recordAnswer(STATE.currentA, STATE.currentB, false);
     STATE.streak = 0;
+    // Stopp kollisjonstimeren med en gang, slik at den ikke rekker å trigge
+    // mens vi viser riktig svar (kan skje i supermode, der fall-tiden kan bli
+    // kortere enn de 1500ms tilbakemeldingsvinduet under)
+    clearTimeout(STATE.asteroidTimeout);
     // Farten går ned ett hakk (10%) ved feil, ikke full reset
     if (STATE.superMode) {
       STATE.speedMultiplier = Math.min(1.0, STATE.speedMultiplier / 0.9);
@@ -1518,7 +1531,6 @@ function handleAnswer(choice, btn) {
     }
     setTimeout(() => {
       if (STATE.asteroid) {
-        clearTimeout(STATE.asteroidTimeout);
         loseLife();
         STATE.asteroid.remove();
         STATE.asteroid = null;
@@ -1593,7 +1605,7 @@ function dropStar() {
   AUDIO.star();
   const star = document.createElement('div');
   star.className = 'star-pickup';
-  star.textContent = '⭐';
+  star.textContent = '🪙';
   star.style.left = (Math.random() * (window.innerWidth - 40)) + 'px';
   star.style.top = '0';
   document.getElementById('game').appendChild(star);
@@ -1877,6 +1889,7 @@ function resetGame() {
 function showHangar() {
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('gameover').style.display = 'none';
+  document.getElementById('hangar-stars').textContent = `🪙 ${STATE.totalStars} gullmynter å handle for`;
   const grid = document.getElementById('hangar-grid');
   grid.innerHTML = '';
   SHIPS.forEach((ship, i) => {
@@ -1886,7 +1899,7 @@ function showHangar() {
     card.className = 'ship-card' + (unlocked ? ' unlocked' : ' locked') + (STATE.activeShip === i ? ' active' : '');
     card.innerHTML = shipSVG(ship.color, i) +
       `<div class="name">${ship.name}</div>` +
-      (unlocked ? '' : `<div class="cost">⭐ ${ship.cost}</div><div class="lock-icon">🔒</div>`);
+      (unlocked ? '' : `<div class="cost">🪙 ${ship.cost}</div><div class="lock-icon">🔒</div>`);
     card.onclick = () => {
       if (unlocked) {
         STATE.activeShip = i;
@@ -1901,7 +1914,7 @@ function showHangar() {
         showHangar();
       } else {
         const need = ship.cost - STATE.totalStars;
-        showFeedback(`Trenger ${need} ⭐ til`, '#ff6b9d');
+        showFeedback(`Trenger ${need} 🪙 til`, '#ff6b9d');
       }
     };
     grid.appendChild(card);
@@ -2102,6 +2115,8 @@ function updateActiveMissionLabel() {
 
 loadActivePlanets();
 updateActiveMissionLabel();
+loadProgress();
+updateHUD();
 
 // ===== Hall of Fame =====
 const HOF_TITLES = [
