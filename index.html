@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v14';
+const APP_VERSION = 'v15';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1120,30 +1120,55 @@ updateSoundIcon();
 // ===== Bakgrunnsmusikk (kun på hovedskjerm/menyer, stoppes i selve spillingen) =====
 // Bruker samme lyd-av/på-knapp/innstilling som resten av lydene (AUDIO.enabled)
 const MUSIC = {
-  playing: false,
+  playing: false,    // om melodi-loopen faktisk kjører akkurat nå
+  shouldPlay: false, // om vi ØNSKER musikk her (styres av startGame/quitGame/etc.)
   timeoutId: null,
-  notes: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63], // C-E-G-C-G-E arpeggio
-  noteDuration: 0.55,
+  // Rask, energisk 8-dels riff (chiptune-følelse) + enkel bass-puls under
+  lead: [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 440.00, 523.25], // C5 E5 G5 E5 D5 C5 A4 C5
+  bass: [130.81, 0, 0, 0, 174.61, 0, 130.81, 0], // C3 ... F3 ... C3 ...
+  stepDuration: 0.22,
   start() {
-    if (this.playing) return;
+    this.shouldPlay = true;
+    if (this.playing || document.hidden) return;
     this.playing = true;
     this._playPhrase();
   },
   stop() {
+    this.shouldPlay = false;
     this.playing = false;
     clearTimeout(this.timeoutId);
   },
   _playPhrase() {
     if (!this.playing) return;
-    this.notes.forEach((freq, i) => {
-      AUDIO.tone({ freq, type: 'triangle', duration: this.noteDuration * 0.9, volume: 0.06, attack: 0.08, when: i * this.noteDuration });
+    this.lead.forEach((freq, i) => {
+      AUDIO.tone({ freq, type: 'square', duration: this.stepDuration * 0.8, volume: 0.045, attack: 0.005, when: i * this.stepDuration });
     });
-    const phraseMs = this.notes.length * this.noteDuration * 1000;
+    this.bass.forEach((freq, i) => {
+      if (!freq) return;
+      AUDIO.tone({ freq, type: 'triangle', duration: this.stepDuration * 1.7, volume: 0.05, attack: 0.01, when: i * this.stepDuration });
+    });
+    const phraseMs = this.lead.length * this.stepDuration * 1000;
     this.timeoutId = setTimeout(() => this._playPhrase(), phraseMs);
   }
 };
 // Nettlesere krever brukerinteraksjon før lyd kan spilles - starter alt ved første trykk
 document.addEventListener('pointerdown', () => { AUDIO.init(); MUSIC.start(); }, { once: true });
+
+// Musikken skal ALDRI høres mens appen er i bakgrunnen: suspender hele lydmotoren
+// med en gang (stopper også toner som alt er planlagt, ikke bare fremtidige faser)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    MUSIC.playing = false;
+    clearTimeout(MUSIC.timeoutId);
+    if (AUDIO.ctx && AUDIO.ctx.state === 'running') AUDIO.ctx.suspend();
+  } else {
+    if (AUDIO.ctx && AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume();
+    if (MUSIC.shouldPlay) {
+      MUSIC.playing = true;
+      MUSIC._playPhrase();
+    }
+  }
+});
 
 // ===== State =====
 const STATE = {
