@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1423,52 +1423,51 @@ function shipSVG(color, idx = 0) {
 }
 
 // ===== Gangetabell-logikk =====
-// Vekter 1-10 etter hvor godt spilleren mestrer a×b (fra Oppdragsrapport-statistikken),
-// slik at vanskelige stykker dukker litt oftere opp - uten å bli ren pugging av det vanskelige.
-function pickWeightedFactor(a, stats) {
-  const weights = [];
-  for (let b = 1; b <= 10; b++) {
-    const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
-    const data = stats[key];
-    let w = 2; // aldri sett - litt ekstra vekt for å utforske nye stykker
-    if (data) {
-      const total = data.correct + data.wrong;
-      if (total > 0) {
-        const pct = data.correct / total;
-        if (pct < 0.5) w = 4;        // vanskelig - vis oftere
-        else if (pct < 0.8) w = 2;   // ok
-        else w = 0.6;                // godt mestret - vis sjeldnere, men ikke aldri
-      }
-    }
-    weights.push(w);
-  }
-  const total = weights.reduce((s, w) => s + w, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < weights.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return i + 1;
-  }
-  return 10;
+// Vekter hvert stykke a×b etter hvor godt spilleren mestrer det (fra
+// Oppdragsrapport-statistikken), slik at vanskelige stykker dukker tydelig
+// oftere opp enn godt mestrede - uten å bli ren pugging av det vanskelige.
+function factWeight(key, stats) {
+  const data = stats[key];
+  if (!data) return 3; // aldri sett - litt ekstra vekt for å utforske nye stykker
+  const total = data.correct + data.wrong;
+  if (total === 0) return 3;
+  const pct = data.correct / total;
+  if (pct < 0.5) return 6;      // vanskelig - vis mye oftere
+  if (pct < 0.8) return 2;      // ok
+  return 0.3;                   // godt mestret - vis sjeldnere, men ikke aldri
 }
 
 function generateProblem() {
   const activeList = [...activePlanets].sort((a,b) => a-b);
   const stats = loadStats();
 
-  let a, b, key;
+  // Alle stykker hvor minst ett tall er fra aktivt oppdrag, vektet etter vanskelighet
+  const candidates = [];
+  activeList.forEach(a => {
+    for (let b = 1; b <= 10; b++) {
+      const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+      candidates.push({ a, b, key, w: factWeight(key, stats) });
+    }
+  });
+  const totalWeight = candidates.reduce((s, c) => s + c.w, 0);
+
+  let chosen;
   let attempts = 0;
   do {
-    // Ett tall MÅ komme fra aktivt oppdrag
-    a = activeList[Math.floor(Math.random() * activeList.length)];
-    // Andre tall vektet mot det spilleren sliter mest med
-    b = pickWeightedFactor(a, stats);
-    // Bytt om av og til så rekkefølgen varierer (6×3 og 3×6 er samme stykke)
-    if (Math.random() < 0.5) { const tmp = a; a = b; b = tmp; }
-    key = `${Math.min(a,b)}x${Math.max(a,b)}`;
+    let r = Math.random() * totalWeight;
+    chosen = candidates[candidates.length - 1];
+    for (const c of candidates) {
+      r -= c.w;
+      if (r <= 0) { chosen = c; break; }
+    }
     attempts++;
-  } while (STATE.recentProblems.includes(key) && attempts < 10);
+  } while (STATE.recentProblems.includes(chosen.key) && attempts < 15);
 
-  STATE.recentProblems.push(key);
+  let { a, b } = chosen;
+  // Bytt om av og til så rekkefølgen varierer (6×3 og 3×6 er samme stykke)
+  if (Math.random() < 0.5) { const tmp = a; a = b; b = tmp; }
+
+  STATE.recentProblems.push(chosen.key);
   if (STATE.recentProblems.length > 4) STATE.recentProblems.shift();
 
   return { a, b, answer: a * b };
