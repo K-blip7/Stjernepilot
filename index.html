@@ -992,7 +992,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -2241,7 +2241,7 @@ function updateSoundIcon() {
 
 // ===== Planeter / Oppdrag-konfigurasjon =====
 const PLANETS = [
-  { num: 1,  emoji: '🌑' },
+  { num: 1,  emoji: '🟠' },
   { num: 2,  emoji: '🌍' },
   { num: 3,  emoji: '🔴' },
   { num: 4,  emoji: '🟡' },
@@ -2526,16 +2526,35 @@ function isTableMastered(n, stats) {
   return true;
 }
 
+// Merker som er oppnådd lagres permanent - man skal ikke kunne miste
+// et merke igjen selv om treffprosenten senere synker under 80%
+function loadMasteredTables() {
+  try { return new Set(JSON.parse(localStorage.getItem('masteredTables') || '[]')); } catch(e) { return new Set(); }
+}
+
+function saveMasteredTables(set) {
+  try { localStorage.setItem('masteredTables', JSON.stringify([...set])); } catch(e) {}
+}
+
 function buildBadgesRow(stats) {
   const row = document.getElementById('badges-row');
   if (!row) return;
   row.innerHTML = '';
+  const mastered = loadMasteredTables();
+  let changed = false;
   PLANETS.forEach(p => {
-    const mastered = isTableMastered(p.num, stats);
+    if (!mastered.has(p.num) && isTableMastered(p.num, stats)) {
+      mastered.add(p.num);
+      changed = true;
+    }
+  });
+  if (changed) saveMasteredTables(mastered);
+  PLANETS.forEach(p => {
+    const earned = mastered.has(p.num);
     const badge = document.createElement('div');
-    badge.className = 'badge' + (mastered ? ' earned' : '');
+    badge.className = 'badge' + (earned ? ' earned' : '');
     badge.innerHTML = `<div class="badge-emoji">${p.emoji}</div><div class="badge-num">${p.num}</div>`;
-    badge.title = mastered ? `${p.num}-gangen mestret!` : `${p.num}-gangen: øv mer for merke (80%+ riktig)`;
+    badge.title = earned ? `${p.num}-gangen mestret!` : `${p.num}-gangen: øv mer for merke (80%+ riktig)`;
     row.appendChild(badge);
   });
 }
