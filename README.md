@@ -52,3 +52,7 @@ Du kan enkelt redigere `index.html` for å:
 - Endre vanskelighetsprogresjon (søk etter `maxFactor` i koden)
 - Legge til flere romskip (`SHIPS`-arrayen)
 - Endre farger og tema
+
+## Kreditering
+- Bakgrunnsmusikk: ["mallet in space"](https://freesound.org/people/plagasul/sounds/253379/) av plagasul, lisensiert under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Prosjekt: https://github.com/K-blip7/Stjernepilot

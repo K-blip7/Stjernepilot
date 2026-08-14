@@ -920,6 +920,7 @@
     </div>
     <button class="big-btn" style="background: linear-gradient(135deg, #4aff8e, #22cc66); border-color: #4aff8e; color: #050018; margin-top: 10px; width:100%; max-width:320px; font-size: 16px;" onclick="showStats()">📊 OPPDRAGSRAPPORT</button>
     <div id="app-version" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 8px); right:12px; font-family:'Exo 2',sans-serif; font-size:14px; color:#ffffff66; letter-spacing:1px;"></div>
+    <div id="credits-link" onclick="showCredits()" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 8px); left:12px; font-family:'Exo 2',sans-serif; font-size:14px; color:#ffffff66; letter-spacing:1px; cursor:pointer;">ℹ️ Credits</div>
   </div>
 
   <!-- Hall of Fame -->
@@ -928,6 +929,19 @@
     <div class="subtitle">GALAKTISKE REKORDER</div>
     <div class="hof-list" id="hof-list"></div>
     <button class="big-btn" onclick="closeHallOfFame()" style="margin-top:8px;">TILBAKE</button>
+  </div>
+
+  <!-- Credits -->
+  <div class="hof-modal" id="credits-modal" style="display:none;">
+    <h1>ℹ️ CREDITS</h1>
+    <div style="max-width:320px;font-family:'Exo 2',sans-serif;color:#fff;line-height:1.7;margin-top:20px;text-align:left;">
+      <p style="margin-bottom:18px;">🎵 Bakgrunnsmusikk: <strong>«mallet in space»</strong> av plagasul<br>
+        <span style="color:#ffffff88;font-size:13px;">Lisens: CC BY 4.0</span><br>
+        <a href="https://freesound.org/people/plagasul/sounds/253379/" target="_blank" rel="noopener" style="color:#7ee0ff;word-break:break-all;">freesound.org/people/plagasul/sounds/253379</a></p>
+      <p>💻 Prosjektet på GitHub:<br>
+        <a href="https://github.com/K-blip7/Stjernepilot" target="_blank" rel="noopener" style="color:#7ee0ff;">github.com/K-blip7/Stjernepilot</a></p>
+    </div>
+    <button class="big-btn" onclick="closeCredits()" style="margin-top:24px;">TILBAKE</button>
   </div>
 
   <!-- Statistikk -->
@@ -993,7 +1007,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1119,69 +1133,63 @@ AUDIO.load();
 updateSoundIcon();
 
 // ===== Bakgrunnsmusikk (kun på hovedskjerm/menyer, stoppes i selve spillingen) =====
-// Bruker samme lyd-av/på-knapp/innstilling som resten av lydene (AUDIO.enabled)
-// Fem 8-dels fraser satt sammen til én lengre melodi (samme tempo/energi som før,
-// men ~5x lenger før den repeterer seg selv - hver frase flytter tonearten litt,
-// og siste frase vender hjem til start-frasen igjen)
-const MUSIC_PHRASE_A = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 440.00, 523.25]; // C5 E5 G5 E5 D5 C5 A4 C5
-const MUSIC_PHRASE_B = [587.33, 698.46, 880.00, 698.46, 659.25, 587.33, 493.88, 587.33]; // D5 F5 A5 F5 E5 D5 B4 D5
-const MUSIC_PHRASE_C = [659.25, 783.99, 987.77, 783.99, 698.46, 659.25, 523.25, 659.25]; // E5 G5 B5 G5 F5 E5 C5 E5
-const MUSIC_PHRASE_D = [783.99, 698.46, 659.25, 587.33, 523.25, 587.33, 659.25, 523.25]; // G5 F5 E5 D5 C5 D5 E5 C5
-const MUSIC_PHRASE_E = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 392.00, 523.25]; // C5 E5 G5 E5 D5 C5 G4 C5 (hjem igjen)
-const MUSIC_BASS_A = [130.81, 0, 0, 0, 174.61, 0, 0, 0]; // C3 ... F3 ...
-const MUSIC_BASS_B = [146.83, 0, 0, 0, 196.00, 0, 0, 0]; // D3 ... G3 ...
-const MUSIC_BASS_C = [164.81, 0, 0, 0, 220.00, 0, 0, 0]; // E3 ... A3 ...
-const MUSIC_BASS_D = [196.00, 0, 0, 0, 130.81, 0, 0, 0]; // G3 ... C3 ...
-const MUSIC_BASS_E = [130.81, 0, 0, 0, 174.61, 0, 0, 0]; // C3 ... F3 ...
-
+// Ekte lydfil ("mallet in space" av plagasul, CC BY 4.0 - se credits-lenke på
+// hovedskjermen) satt til å loope sømløst via Web Audio, i stedet for en
+// syntetisert melodi. Bruker samme lyd-av/på-knapp/innstilling som resten av
+// lydene (AUDIO.enabled).
 const MUSIC = {
-  playing: false,    // om melodi-loopen faktisk kjører akkurat nå
+  url: './audio/menu-music.mp3',
+  buffer: null,      // dekodet lydbuffer, lastes kun én gang og gjenbrukes
+  loadingPromise: null,
+  source: null,      // aktiv AudioBufferSourceNode, eller null hvis ikke i gang
   shouldPlay: false, // om vi ØNSKER musikk her (styres av startGame/quitGame/etc.)
-  timeoutId: null,
-  // Rask, energisk 8-dels riff (chiptune-følelse) + enkel bass-puls under
-  lead: [...MUSIC_PHRASE_A, ...MUSIC_PHRASE_B, ...MUSIC_PHRASE_C, ...MUSIC_PHRASE_D, ...MUSIC_PHRASE_E],
-  bass: [...MUSIC_BASS_A, ...MUSIC_BASS_B, ...MUSIC_BASS_C, ...MUSIC_BASS_D, ...MUSIC_BASS_E],
-  stepDuration: 0.22,
-  start() {
+  async loadBuffer() {
+    if (this.buffer) return this.buffer;
+    if (!this.loadingPromise) {
+      this.loadingPromise = fetch(this.url)
+        .then(res => res.arrayBuffer())
+        .then(data => AUDIO.ctx.decodeAudioData(data))
+        .then(buf => { this.buffer = buf; return buf; })
+        .catch(err => { console.log('Kunne ikke laste bakgrunnsmusikk:', err); this.loadingPromise = null; });
+    }
+    return this.loadingPromise;
+  },
+  async start() {
     this.shouldPlay = true;
-    if (this.playing || document.hidden) return;
-    this.playing = true;
-    this._playPhrase();
+    if (this.source || document.hidden || !AUDIO.enabled) return;
+    AUDIO.init();
+    const buf = await this.loadBuffer();
+    // shouldPlay/source kan ha endret seg mens vi ventet på nedlasting/dekoding
+    if (!buf || !this.shouldPlay || this.source) return;
+    this.source = AUDIO.ctx.createBufferSource();
+    this.source.buffer = buf;
+    this.source.loop = true;
+    this.gainNode = AUDIO.ctx.createGain();
+    this.gainNode.gain.value = 0.35;
+    this.source.connect(this.gainNode).connect(AUDIO.ctx.destination);
+    this.source.start(0);
   },
   stop() {
     this.shouldPlay = false;
-    this.playing = false;
-    clearTimeout(this.timeoutId);
-  },
-  _playPhrase() {
-    if (!this.playing) return;
-    this.lead.forEach((freq, i) => {
-      AUDIO.tone({ freq, type: 'square', duration: this.stepDuration * 0.8, volume: 0.045, attack: 0.005, when: i * this.stepDuration });
-    });
-    this.bass.forEach((freq, i) => {
-      if (!freq) return;
-      AUDIO.tone({ freq, type: 'triangle', duration: this.stepDuration * 1.7, volume: 0.05, attack: 0.01, when: i * this.stepDuration });
-    });
-    const phraseMs = this.lead.length * this.stepDuration * 1000;
-    this.timeoutId = setTimeout(() => this._playPhrase(), phraseMs);
+    if (this.source) {
+      try { this.source.stop(); } catch(e) {}
+      this.source.disconnect();
+      this.source = null;
+    }
+    if (this.gainNode) { this.gainNode.disconnect(); this.gainNode = null; }
   }
 };
 // Nettlesere krever brukerinteraksjon før lyd kan spilles - starter alt ved første trykk
 document.addEventListener('pointerdown', () => { AUDIO.init(); MUSIC.start(); }, { once: true });
 
 // Musikken skal ALDRI høres mens appen er i bakgrunnen: suspender hele lydmotoren
-// med en gang (stopper også toner som alt er planlagt, ikke bare fremtidige faser)
+// (fryser avspillingen akkurat der den var, fortsetter sømløst når man kommer tilbake)
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    MUSIC.playing = false;
-    clearTimeout(MUSIC.timeoutId);
     if (AUDIO.ctx && AUDIO.ctx.state === 'running') AUDIO.ctx.suspend();
   } else {
     if (AUDIO.ctx && AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume();
-    if (MUSIC.shouldPlay) {
-      MUSIC.playing = true;
-      MUSIC._playPhrase();
-    }
+    if (MUSIC.shouldPlay && !MUSIC.source) MUSIC.start();
   }
 });
 
@@ -2236,20 +2244,15 @@ function toggleSound() {
   const enabled = AUDIO.toggle();
   document.getElementById('sound-toggle').textContent = enabled ? '🔊' : '🔇';
   if (enabled) {
-    // Lag en frisk lydmotor (init() lager kun ny hvis den forrige ble lukket) og
-    // start musikkfrasen på nytt med en gang - ikke vent på neste naturlige runde
     AUDIO.init();
+    if (AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume();
     AUDIO.tone({ freq: 880, duration: 0.1, volume: 0.15 });
-    if (MUSIC.shouldPlay) {
-      clearTimeout(MUSIC.timeoutId);
-      MUSIC.playing = true;
-      MUSIC._playPhrase();
-    }
+    if (MUSIC.shouldPlay && !MUSIC.source) MUSIC.start();
   } else if (AUDIO.ctx) {
-    // Lukk lydmotoren helt - stopper alt som alt er planlagt med en gang,
-    // ikke bare fremtidige toner
-    AUDIO.ctx.close().catch(() => {});
-    AUDIO.ctx = null;
+    // Suspender lydmotoren med en gang - siden musikken nå er én sammenhengende
+    // loop (ikke planlagte enkelttoner), fryser dette den lydløst momentant og
+    // fortsetter nøyaktig der den var når man skrur på igjen
+    AUDIO.ctx.suspend();
   }
 }
 
@@ -2435,6 +2438,17 @@ function showHallOfFame(fromGame = false) {
 
 function closeHallOfFame() {
   document.getElementById('hof-modal').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+  MUSIC.start();
+}
+
+function showCredits() {
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('credits-modal').style.display = 'flex';
+}
+
+function closeCredits() {
+  document.getElementById('credits-modal').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
   MUSIC.start();
 }
@@ -2721,7 +2735,7 @@ function fullReset() {
 }
 
 function hideAllModals() {
-  ['welcome','hof-modal','stats-modal','hangar-modal','gameover','mission-modal'].forEach(id => {
+  ['welcome','hof-modal','stats-modal','hangar-modal','gameover','mission-modal','credits-modal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
