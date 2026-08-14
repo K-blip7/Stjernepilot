@@ -945,6 +945,11 @@
         <a href="https://freesound.org/people/confusion_music/sounds/103426/" target="_blank" rel="noopener" style="color:#7ee0ff;">confusion_music</a>,
         <a href="https://freesound.org/people/FiveBrosStopMosYT/sounds/558709/" target="_blank" rel="noopener" style="color:#7ee0ff;">FiveBrosStopMosYT</a><br>
         <span style="color:#ffffff88;font-size:13px;">+ 5 lyder under CC0 (offentlig eiendom)</span></p>
+      <p style="margin-bottom:18px;">🛸 UFO-lyder: ni ulike opptak, tilfeldig valgt<br>
+        <span style="color:#ffffff88;font-size:13px;">CC BY-NC 3.0 (ikke-kommersiell):</span>
+        <a href="https://freesound.org/people/richmstudios/sounds/317015/" target="_blank" rel="noopener" style="color:#7ee0ff;">richmstudios</a>,
+        <a href="https://freesound.org/people/Romeo_Kaleikau/sounds/588252/" target="_blank" rel="noopener" style="color:#7ee0ff;">Romeo_Kaleikau</a><br>
+        <span style="color:#ffffff88;font-size:13px;">+ 7 lyder under CC0 (offentlig eiendom)</span></p>
       <p>💻 Prosjektet på GitHub:<br>
         <a href="https://github.com/K-blip7/Stjernepilot" target="_blank" rel="noopener" style="color:#7ee0ff;">github.com/K-blip7/Stjernepilot</a></p>
     </div>
@@ -1014,7 +1019,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v23';
+const APP_VERSION = 'v24';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1099,10 +1104,9 @@ const AUDIO = {
     this.tone({ freq: 900, freqEnd: 700, type: 'square', duration: 0.08, volume: 0.15, when: 0.12 });
     this.tone({ freq: 1100, freqEnd: 800, type: 'square', duration: 0.12, volume: 0.18, when: 0.24 });
   },
-  // UFO: BZZZT - sci-fi sveip
+  // UFO: tilfeldig ekte sci-fi-lyd (ni ulike opptak, se credits på hovedskjermen)
   ufo() {
-    this.tone({ freq: 200, freqEnd: 1800, type: 'sawtooth', duration: 0.3, volume: 0.18 });
-    this.tone({ freq: 1800, freqEnd: 400, type: 'sine', duration: 0.2, volume: 0.15, when: 0.3 });
+    playRandomAnimalSound('ufo');
   },
   // Game over
   gameOver() {
@@ -1146,6 +1150,13 @@ const ANIMAL_SOUNDS = {
     urls: ['./audio/cow/cow1.mp3', './audio/cow/cow2.mp3', './audio/cow/cow3.mp3',
            './audio/cow/cow4.mp3', './audio/cow/cow5.mp3', './audio/cow/cow6.mp3',
            './audio/cow/cow7.mp3', './audio/cow/cow8.mp3', './audio/cow/cow9.mp3'],
+    buffers: null,
+    loadingPromise: null,
+  },
+  ufo: {
+    urls: ['./audio/ufo/ufo1.mp3', './audio/ufo/ufo2.mp3', './audio/ufo/ufo3.mp3',
+           './audio/ufo/ufo4.mp3', './audio/ufo/ufo5.mp3', './audio/ufo/ufo6.mp3',
+           './audio/ufo/ufo7.mp3', './audio/ufo/ufo8.mp3', './audio/ufo/ufo9.mp3'],
     buffers: null,
     loadingPromise: null,
   },
