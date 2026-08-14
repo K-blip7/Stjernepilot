@@ -55,4 +55,5 @@ Du kan enkelt redigere `index.html` for å:
 
 ## Kreditering
 - Bakgrunnsmusikk: ["mallet in space"](https://freesound.org/people/plagasul/sounds/253379/) av plagasul, lisensiert under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Ku-lyder (ni ulike, valgt tilfeldig): CC BY 4.0-opptak av [toddtruax](https://freesound.org/people/toddtruax/sounds/144820/), [mokasza](https://freesound.org/people/mokasza/sounds/810758/), [confusion_music](https://freesound.org/people/confusion_music/sounds/103426/) og [FiveBrosStopMosYT](https://freesound.org/people/FiveBrosStopMosYT/sounds/558709/), samt 5 opptak under CC0 (offentlig eiendom) fra Julalvr, GoombaGuy, DiArchangeli, JarredGibb og TheKingOfGeeks360
 - Prosjekt: https://github.com/K-blip7/Stjernepilot
