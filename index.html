@@ -987,12 +987,13 @@
     <p id="best-line" style="color: #ffd84a;"></p>
     <button class="big-btn" onclick="resetGame()">SPILL IGJEN</button>
     <button class="big-btn" style="background: linear-gradient(135deg, #7ee0ff, #5566ff); border-color: #7ee0ff; color: #fff; margin-top: 12px;" onclick="showHangar()">HANGAR</button>
+    <button class="big-btn" style="background: transparent; border-color: #ffffff66; color: #ffffffaa; box-shadow: none; margin-top: 12px;" onclick="gameOverToMenu()">🏠 HOVEDMENY</button>
   </div>
 </div>
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -2089,6 +2090,12 @@ function endGame() {
 
 function resetGame() {
   startGame();
+}
+
+function gameOverToMenu() {
+  document.getElementById('gameover').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+  renderShip();
 }
 
 // ===== Hangar =====
