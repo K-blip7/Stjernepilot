@@ -950,6 +950,11 @@
         <a href="https://freesound.org/people/richmstudios/sounds/317015/" target="_blank" rel="noopener" style="color:#7ee0ff;">richmstudios</a>,
         <a href="https://freesound.org/people/Romeo_Kaleikau/sounds/588252/" target="_blank" rel="noopener" style="color:#7ee0ff;">Romeo_Kaleikau</a><br>
         <span style="color:#ffffff88;font-size:13px;">+ 7 lyder under CC0 (offentlig eiendom)</span></p>
+      <p style="margin-bottom:18px;">🐷 Grisely: seks ulike opptak, tilfeldig valgt<br>
+        <span style="color:#ffffff88;font-size:13px;">CC BY 4.0:</span>
+        <a href="https://freesound.org/people/JarredGibb/sounds/233174/" target="_blank" rel="noopener" style="color:#7ee0ff;">JarredGibb</a>,
+        <a href="https://freesound.org/people/DrinkingWindGames/sounds/865014/" target="_blank" rel="noopener" style="color:#7ee0ff;">DrinkingWindGames</a><br>
+        <span style="color:#ffffff88;font-size:13px;">+ 4 lyder under CC0 (offentlig eiendom)</span></p>
       <p>💻 Prosjektet på GitHub:<br>
         <a href="https://github.com/K-blip7/Stjernepilot" target="_blank" rel="noopener" style="color:#7ee0ff;">github.com/K-blip7/Stjernepilot</a></p>
     </div>
@@ -1019,7 +1024,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1089,10 +1094,9 @@ const AUDIO = {
     this.tone({ freq: 660, type: 'triangle', duration: 0.1, volume: 0.15 });
     this.tone({ freq: 880, type: 'triangle', duration: 0.15, volume: 0.15, when: 0.1 });
   },
-  // Gris: NØFF - to korte grynt
+  // Gris: tilfeldig ekte grisely (seks ulike opptak, se credits på hovedskjermen)
   pig() {
-    this.tone({ freq: 180, freqEnd: 130, type: 'sawtooth', duration: 0.12, volume: 0.25, attack: 0.005 });
-    this.tone({ freq: 200, freqEnd: 150, type: 'sawtooth', duration: 0.12, volume: 0.25, attack: 0.005, when: 0.18 });
+    playRandomAnimalSound('pig');
   },
   // Ku: tilfeldig ekte ku-lyd (ni ulike opptak, se credits på hovedskjermen)
   cow() {
@@ -1157,6 +1161,12 @@ const ANIMAL_SOUNDS = {
     urls: ['./audio/ufo/ufo1.mp3', './audio/ufo/ufo2.mp3', './audio/ufo/ufo3.mp3',
            './audio/ufo/ufo4.mp3', './audio/ufo/ufo5.mp3', './audio/ufo/ufo6.mp3',
            './audio/ufo/ufo7.mp3', './audio/ufo/ufo8.mp3', './audio/ufo/ufo9.mp3'],
+    buffers: null,
+    loadingPromise: null,
+  },
+  pig: {
+    urls: ['./audio/pig/pig1.mp3', './audio/pig/pig2.mp3', './audio/pig/pig3.mp3',
+           './audio/pig/pig4.mp3', './audio/pig/pig5.mp3', './audio/pig/pig6.mp3'],
     buffers: null,
     loadingPromise: null,
   },
