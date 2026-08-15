@@ -986,6 +986,14 @@
         <a href="https://freesound.org/people/snapssound/sounds/623921/" target="_blank" rel="noopener" style="color:#7ee0ff;">snapssound</a>,
         <a href="https://freesound.org/people/dogwomble/sounds/475734/" target="_blank" rel="noopener" style="color:#7ee0ff;">dogwomble</a><br>
         <span style="color:#ffffff88;font-size:13px;">+ 6 lyder under CC0 (offentlig eiendom)</span></p>
+      <p style="margin-bottom:18px;">💥 Boss-treff-lyder: seks ulike opptak, tilfeldig valgt<br>
+        <span style="color:#ffffff88;font-size:13px;">CC BY 4.0:</span>
+        <a href="https://freesound.org/people/qubodup/sounds/804616/" target="_blank" rel="noopener" style="color:#7ee0ff;">qubodup</a>,
+        <span style="color:#ffffff88;font-size:13px;">CC BY-NC 3.0:</span>
+        <a href="https://freesound.org/people/Dirtjm/sounds/262279/" target="_blank" rel="noopener" style="color:#7ee0ff;">Dirtjm</a>,
+        <span style="color:#ffffff88;font-size:13px;">Sampling+:</span>
+        <a href="https://freesound.org/people/Michel88/sounds/76969/" target="_blank" rel="noopener" style="color:#7ee0ff;">Michel88</a><br>
+        <span style="color:#ffffff88;font-size:13px;">+ 3 lyder under CC0 (offentlig eiendom)</span></p>
       <p>💻 Prosjektet på GitHub:<br>
         <a href="https://github.com/K-blip7/Stjernepilot" target="_blank" rel="noopener" style="color:#7ee0ff;">github.com/K-blip7/Stjernepilot</a></p>
     </div>
@@ -1063,7 +1071,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v31';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1216,6 +1224,12 @@ const ANIMAL_SOUNDS = {
     urls: ['./audio/chicken/chicken1.mp3', './audio/chicken/chicken2.mp3', './audio/chicken/chicken3.mp3',
            './audio/chicken/chicken4.mp3', './audio/chicken/chicken5.mp3', './audio/chicken/chicken6.mp3',
            './audio/chicken/chicken7.mp3', './audio/chicken/chicken8.mp3'],
+    buffers: null,
+    loadingPromise: null,
+  },
+  bossHit: {
+    urls: ['./audio/boss/boss-hit1.mp3', './audio/boss/boss-hit2.mp3', './audio/boss/boss-hit3.mp3',
+           './audio/boss/boss-hit4.mp3', './audio/boss/boss-hit5.mp3', './audio/boss/boss-hit6.mp3'],
     buffers: null,
     loadingPromise: null,
   },
@@ -1821,8 +1835,13 @@ function handleAnswer(choice, btn) {
     const bossDefeated = isBoss && STATE.bossHitsLanded >= 3;
     // Spill dyrelyd/boss-lyd hvis relevant
     if (isBoss) {
-      setTimeout(() => AUDIO.boss(), 150);
-      if (bossDefeated) setTimeout(() => AUDIO.win(), 450);
+      if (bossDefeated) {
+        setTimeout(() => AUDIO.boss(), 150);
+        setTimeout(() => AUDIO.win(), 450);
+      } else {
+        // Treff 1 og 2: tilfeldig ekte reaksjonslyd (se credits på hovedskjermen)
+        setTimeout(() => playRandomAnimalSound('bossHit', 0.7), 150);
+      }
     } else if (enemy && AUDIO[enemy.id]) {
       setTimeout(() => AUDIO[enemy.id](), 150);
     }
