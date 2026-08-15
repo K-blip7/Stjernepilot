@@ -1,6 +1,6 @@
 // Service Worker for Stjernepilot PWA
 // Øk versjonsnummeret her hver gang du pusher oppdateringer til GitHub
-const CACHE_VERSION = 'stjernepilot-v25';
+const CACHE_VERSION = 'stjernepilot-v26';
 const ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,14 @@ const ASSETS = [
   './audio/pig/pig4.mp3',
   './audio/pig/pig5.mp3',
   './audio/pig/pig6.mp3',
+  './audio/chicken/chicken1.mp3',
+  './audio/chicken/chicken2.mp3',
+  './audio/chicken/chicken3.mp3',
+  './audio/chicken/chicken4.mp3',
+  './audio/chicken/chicken5.mp3',
+  './audio/chicken/chicken6.mp3',
+  './audio/chicken/chicken7.mp3',
+  './audio/chicken/chicken8.mp3',
   'https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&family=Orbitron:wght@600;900&display=swap'
 ];
 
