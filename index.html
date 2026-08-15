@@ -1078,7 +1078,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v32';
+const APP_VERSION = 'v33';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1348,15 +1348,21 @@ const STATE = {
   recentProblems: [],
   speedMultiplier: 1.0,  // 1.0 = normal, lavere = raskere (kortere duration)
   superMode: false,      // true når 25-streak er oppnådd
-  enemiesSinceBoss: 0,   // teller opp mot BOSS_INTERVAL
+  nextBossScore: 0,      // poengsum som trigger neste boss (trekkes tilfeldig på nytt hver gang)
   bossActive: false,     // true mens en boss-kamp pågår (kan strekke seg over flere spawn)
   bossHitsLanded: 0,     // riktige svar på rad landet på nåværende boss (trenger 3)
 };
 
-// Boss: dukker opp hvert BOSS_INTERVAL. stykke og krever 3 riktige svar PÅ RAD
-// for å beseire - ett feil svar og den kommer igjen (telleren nullstilles, men
-// bossen forsvinner ikke). Ikke med i den vanlige vektede fiende-poolen under.
-const BOSS_INTERVAL = 15;
+// Boss: dukker opp når poengsummen når et tilfeldig mål mellom BOSS_SCORE_MIN
+// og BOSS_SCORE_MAX poeng - nytt tilfeldig mål trekkes hver gang (så det
+// varierer hvor tett/sjeldent den dukker opp). Krever 3 riktige svar PÅ RAD
+// for å beseire - ett feil svar og den kommer igjen (telleren nullstilles,
+// men bossen forsvinner ikke). Ikke med i den vanlige vektede fiende-poolen.
+const BOSS_SCORE_MIN = 350;
+const BOSS_SCORE_MAX = 700;
+function rollNextBossScore(fromScore) {
+  return fromScore + BOSS_SCORE_MIN + Math.floor(Math.random() * (BOSS_SCORE_MAX - BOSS_SCORE_MIN + 1));
+}
 const BOSS_ENEMY = { id: 'boss', emoji: '👾', multiplier: 8, sound: null, soundColor: '#ff3366' };
 
 // Fiendetyper - asteroide er vanlig, dyrene er bonus
@@ -1659,7 +1665,7 @@ function startGame() {
   STATE.recentProblems = [];
   STATE.speedMultiplier = 1.0;
   STATE.superMode = false;
-  STATE.enemiesSinceBoss = 0;
+  STATE.nextBossScore = rollNextBossScore(0);
   STATE.bossActive = false;
   STATE.bossHitsLanded = 0;
   updateHUD();
@@ -1767,16 +1773,12 @@ function spawnAsteroid() {
   let enemyType;
   if (STATE.bossActive) {
     enemyType = BOSS_ENEMY; // samme boss-kamp fortsetter til den er beseiret
+  } else if (STATE.score >= STATE.nextBossScore) {
+    STATE.bossActive = true;
+    STATE.bossHitsLanded = 0;
+    enemyType = BOSS_ENEMY;
   } else {
-    STATE.enemiesSinceBoss++;
-    if (STATE.enemiesSinceBoss >= BOSS_INTERVAL) {
-      STATE.enemiesSinceBoss = 0;
-      STATE.bossActive = true;
-      STATE.bossHitsLanded = 0;
-      enemyType = BOSS_ENEMY;
-    } else {
-      enemyType = pickEnemyType();
-    }
+    enemyType = pickEnemyType();
   }
   STATE.currentEnemy = enemyType;
 
@@ -1905,6 +1907,7 @@ function handleAnswer(choice, btn) {
     if (bossDefeated) {
       STATE.bossActive = false;
       STATE.bossHitsLanded = 0;
+      STATE.nextBossScore = rollNextBossScore(STATE.score);
       dropStar();
       setTimeout(() => dropStar(), 150);
       setTimeout(() => dropStar(), 300);
