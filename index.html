@@ -1078,7 +1078,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v34';
+const APP_VERSION = 'v35';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1364,6 +1364,43 @@ function rollNextBossScore(fromScore) {
   return fromScore + BOSS_SCORE_MIN + Math.floor(Math.random() * (BOSS_SCORE_MAX - BOSS_SCORE_MIN + 1));
 }
 const BOSS_ENEMY = { id: 'boss', emoji: '👾', multiplier: 8, sound: null, soundColor: '#ff3366' };
+const BOSS_FALL_MULTIPLIER = 3; // bossen bruker ~3x så lang tid ned som vanlige fiender
+const BOSS_WAVE_AMPLITUDE = 70;
+const BOSS_WAVE_CYCLES = 3;
+
+// Regner ut et senterpunkt for boss-sinusbølgen som holder god avstand til
+// kantene, helst nær et ønsket punkt (f.eks. der bossen allerede befinner seg)
+function computeBossCenterLeft(preferredCenter) {
+  const minLeft = 10, maxLeft = window.innerWidth - 110;
+  const minCenter = minLeft + BOSS_WAVE_AMPLITUDE, maxCenter = maxLeft - BOSS_WAVE_AMPLITUDE;
+  if (minCenter >= maxCenter) return (minLeft + maxLeft) / 2;
+  if (preferredCenter == null) return Math.random() * (maxCenter - minCenter) + minCenter;
+  return Math.min(Math.max(preferredCenter, minCenter), maxCenter);
+}
+
+function buildBossWaveKeyframes(centerLeft) {
+  const steps = 24;
+  const keyframes = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const x = centerLeft + BOSS_WAVE_AMPLITUDE * Math.sin(t * Math.PI * 2 * BOSS_WAVE_CYCLES);
+    keyframes.push({ left: `${x}px`, offset: t });
+  }
+  return keyframes;
+}
+
+function renderAnswerButtons(answer) {
+  const choices = generateChoices(answer);
+  const answersDiv = document.getElementById('answers');
+  answersDiv.innerHTML = '';
+  choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = c;
+    btn.onclick = () => handleAnswer(c, btn);
+    answersDiv.appendChild(btn);
+  });
+}
 
 // Fiendetyper - asteroide er vanlig, dyrene er bonus
 const ENEMY_TYPES = [
@@ -1799,15 +1836,8 @@ function spawnAsteroid() {
   const isBossSpawn = enemyType.id === 'boss';
   // Boss svever sidelengs i en jevn sinusbølge i stedet for å stå stille -
   // hold god avstand til kantene så den ikke svaier utenfor skjermen
-  const waveAmplitude = 70;
   const minLeft = 10, maxLeft = window.innerWidth - 110;
-  let bossCenterLeft = (minLeft + maxLeft) / 2;
-  if (isBossSpawn) {
-    const minCenter = minLeft + waveAmplitude, maxCenter = maxLeft - waveAmplitude;
-    bossCenterLeft = minCenter < maxCenter
-      ? Math.random() * (maxCenter - minCenter) + minCenter
-      : (minLeft + maxLeft) / 2;
-  }
+  const bossCenterLeft = isBossSpawn ? computeBossCenterLeft(null) : null;
   asteroid.style.left = (isBossSpawn ? bossCenterLeft : (Math.random() * (maxLeft - minLeft) + minLeft)) + 'px';
   asteroid.style.top = '-100px';
   game.appendChild(asteroid);
@@ -1822,7 +1852,7 @@ function spawnAsteroid() {
   const baseDuration = Math.max(8000 - STATE.problemsAnswered * 100, 4500);
   // Boss synker mye saktere - den krever flere riktige svar på rad og skal
   // rekke å svai innom noen bølger på veien ned
-  const bossBonus = isBossSpawn ? 1.7 : 1;
+  const bossBonus = isBossSpawn ? BOSS_FALL_MULTIPLIER : 1;
   const duration = Math.round(baseDuration * STATE.speedMultiplier * bossBonus);
   asteroid.animate([
     { top: '-100px' },
@@ -1830,31 +1860,67 @@ function spawnAsteroid() {
   ], { duration, fill: 'forwards', easing: 'linear' });
 
   if (isBossSpawn) {
-    const cycles = 3;
-    const steps = 24;
-    const waveKeyframes = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = bossCenterLeft + waveAmplitude * Math.sin(t * Math.PI * 2 * cycles);
-      waveKeyframes.push({ left: `${x}px`, offset: t });
-    }
-    asteroid.animate(waveKeyframes, { duration, fill: 'forwards', easing: 'linear' });
+    asteroid.animate(buildBossWaveKeyframes(bossCenterLeft), { duration, fill: 'forwards', easing: 'linear' });
   }
 
   // Sjekk kollisjon
   scheduleCollision(asteroid, duration);
 
-  // Render svar-knapper
-  const choices = generateChoices(problem.answer);
-  const answersDiv = document.getElementById('answers');
-  answersDiv.innerHTML = '';
-  choices.forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'answer-btn';
-    btn.textContent = c;
-    btn.onclick = () => handleAnswer(c, btn);
-    answersDiv.appendChild(btn);
-  });
+  renderAnswerButtons(problem.answer);
+}
+
+// Boss overlever treff 1 og 2 - i stedet for å bli ødelagt og en ny spawnet,
+// fortsetter SAMME element å sveve videre fra der den allerede er, med et
+// nytt regnestykke og friskt fall/sveive-vindu (men uten å hoppe tilbake til
+// toppen av skjermen)
+function continueBossFlight() {
+  const asteroid = STATE.asteroid;
+  if (!asteroid) return;
+
+  const problem = generateProblem();
+  STATE.currentAnswer = problem.answer;
+  STATE.currentProblem = `${problem.a}×${problem.b}`;
+  STATE.currentA = problem.a;
+  STATE.currentB = problem.b;
+
+  const tag = asteroid.querySelector('.problem-tag');
+  if (tag) tag.textContent = STATE.currentProblem;
+  const pips = asteroid.querySelectorAll('.boss-health .pip');
+  pips.forEach((p, i) => p.classList.toggle('filled', i < STATE.bossHitsLanded));
+
+  // Liten "treff"-blink som viser at den ble truffet, uten å ødelegge den
+  asteroid.animate([
+    { filter: 'brightness(1)' },
+    { filter: 'brightness(2.4)' },
+    { filter: 'brightness(1)' }
+  ], { duration: 350 });
+
+  // Frys nåværende posisjon (de gamle fall/sveive-animasjonene sluttet aldri
+  // å kjøre av seg selv), og start en ny runde derfra - ikke fra toppen
+  const currentTop = parseFloat(getComputedStyle(asteroid).top);
+  const currentLeft = parseFloat(getComputedStyle(asteroid).left);
+  asteroid.getAnimations().forEach(a => a.cancel());
+  asteroid.style.top = currentTop + 'px';
+  asteroid.style.left = currentLeft + 'px';
+
+  const game = document.getElementById('game');
+  const shipEl = document.getElementById('ship');
+  const shipTop = shipEl.getBoundingClientRect().top;
+  const gameTop = game.getBoundingClientRect().top;
+  const fallTarget = (shipTop - gameTop) - 30;
+  const baseDuration = Math.max(8000 - STATE.problemsAnswered * 100, 4500);
+  const duration = Math.round(baseDuration * STATE.speedMultiplier * BOSS_FALL_MULTIPLIER);
+
+  asteroid.animate([
+    { top: currentTop + 'px' },
+    { top: fallTarget + 'px' }
+  ], { duration, fill: 'forwards', easing: 'linear' });
+
+  const bossCenterLeft = computeBossCenterLeft(currentLeft);
+  asteroid.animate(buildBossWaveKeyframes(bossCenterLeft), { duration, fill: 'forwards', easing: 'linear' });
+
+  scheduleCollision(asteroid, duration);
+  renderAnswerButtons(problem.answer);
 }
 
 function handleAnswer(choice, btn) {
@@ -1867,7 +1933,12 @@ function handleAnswer(choice, btn) {
     shootLaser();
     const enemy = STATE.currentEnemy;
     const isBoss = enemy && enemy.id === 'boss';
-    if (isBoss) STATE.bossHitsLanded++;
+    if (isBoss) {
+      STATE.bossHitsLanded++;
+      // Stopp den gamle kollisjonstimeren med en gang - continueBossFlight()
+      // (eller destroyAsteroid ved treff 3) setter opp en ny rett etterpå
+      clearTimeout(STATE.asteroidTimeout);
+    }
     const bossDefeated = isBoss && STATE.bossHitsLanded >= 3;
     // Spill dyrelyd/boss-lyd hvis relevant
     if (isBoss) {
@@ -1882,15 +1953,21 @@ function handleAnswer(choice, btn) {
     } else if (enemy && AUDIO[enemy.id]) {
       setTimeout(() => AUDIO[enemy.id](), 150);
     }
-    // Eksplosjon
-    setTimeout(() => AUDIO.explosion(), 200);
+    // Eksplosjon - ikke ved boss-treff 1/2, siden den ikke faktisk ødelegges da
+    if (!isBoss || bossDefeated) {
+      setTimeout(() => AUDIO.explosion(), 200);
+    }
     // Vis dyrelyd/boss-status FØR asteroiden ødelegges (slik at vi har posisjonen)
     if (isBoss) {
       showAnimalSound(bossDefeated ? 'BESEIRET!' : `TREFF! ${STATE.bossHitsLanded}/3`, enemy.soundColor);
     } else if (enemy && enemy.sound) {
       showAnimalSound(enemy.sound, enemy.soundColor);
     }
-    setTimeout(() => destroyAsteroid(true), 200);
+    if (isBoss && !bossDefeated) {
+      setTimeout(() => continueBossFlight(), 200);
+    } else {
+      setTimeout(() => destroyAsteroid(true), 200);
+    }
     STATE.streak++;
     if (STATE.streak > STATE.bestStreak) STATE.bestStreak = STATE.streak;
     const basePoints = 1 + STATE.streak * 2;

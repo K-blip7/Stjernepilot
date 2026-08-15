@@ -1,6 +1,6 @@
 // Service Worker for Stjernepilot PWA
 // Øk versjonsnummeret her hver gang du pusher oppdateringer til GitHub
-const CACHE_VERSION = 'stjernepilot-v34';
+const CACHE_VERSION = 'stjernepilot-v35';
 const ASSETS = [
   './',
   './index.html',
