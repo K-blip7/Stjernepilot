@@ -1016,6 +1016,14 @@
     <button class="big-btn" onclick="resumeButtonClicked()">▶️ FORTSETT</button>
   </div>
 
+  <!-- Nytt merke oppnådd -->
+  <div class="modal" id="badge-modal" style="display:none;">
+    <div class="pause-icon" id="badge-modal-emoji">🏅</div>
+    <h1 style="font-size: 30px;">GRATULERER!</h1>
+    <div class="subtitle" id="badge-modal-text"></div>
+    <button class="big-btn" onclick="dismissBadgeCelebration()">▶️ FORTSETT</button>
+  </div>
+
   <!-- Game over -->
   <div class="modal" id="gameover" style="display:none;">
     <h1>OPPDRAG FULLFØRT!</h1>
@@ -1029,7 +1037,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v28';
+const APP_VERSION = 'v29';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1761,6 +1769,14 @@ function handleAnswer(choice, btn) {
     STATE.score += points;
     STATE.problemsAnswered++;
     recordAnswer(STATE.currentA, STATE.currentB, true);
+    // Nytt merke? Pause spawning med en gang (før 800ms-timeouten i
+    // destroyAsteroid rekker å starte neste runde) og vis gratulasjon
+    // litt etter at eksplosjonen er ferdig
+    const newBadges = checkNewBadges(STATE.currentA, STATE.currentB);
+    if (newBadges.length > 0) {
+      STATE.paused = true;
+      setTimeout(() => showBadgeCelebration(newBadges), 900);
+    }
     updateHUD();
     const feedbackText = multiplier > 1 ? `+${points}  ×${multiplier}!` : `+${points}`;
     showFeedback(feedbackText, multiplier > 1 ? '#ffd84a' : '#4aff8e');
@@ -2671,6 +2687,41 @@ function loadMasteredTables() {
 
 function saveMasteredTables(set) {
   try { localStorage.setItem('masteredTables', JSON.stringify([...set])); } catch(e) {}
+}
+
+// Sjekker om et nettopp besvart stykke (a×b) gjorde at en eller begge
+// gangetabellene det tilhører akkurat ble mestret for første gang. Lagrer
+// eventuelle nye merker med en gang (samme lagring som buildBadgesRow bruker)
+// og returnerer listen over tall som akkurat ble mestret.
+function checkNewBadges(a, b) {
+  const stats = loadStats();
+  const mastered = loadMasteredTables();
+  const justEarned = [];
+  [a, b].forEach(num => {
+    if (!mastered.has(num) && isTableMastered(num, stats)) {
+      mastered.add(num);
+      justEarned.push(num);
+    }
+  });
+  if (justEarned.length > 0) saveMasteredTables(mastered);
+  return justEarned;
+}
+
+function showBadgeCelebration(nums) {
+  const emojis = nums.map(n => PLANETS.find(p => p.num === n)?.emoji || '🏅').join(' ');
+  const text = nums.length > 1
+    ? `Du mestret ${nums.join('- og ')}-gangen!`
+    : `Du mestret ${nums[0]}-gangen!`;
+  document.getElementById('badge-modal-emoji').textContent = emojis;
+  document.getElementById('badge-modal-text').textContent = text;
+  document.getElementById('badge-modal').style.display = 'flex';
+  AUDIO.win();
+}
+
+function dismissBadgeCelebration() {
+  document.getElementById('badge-modal').style.display = 'none';
+  STATE.paused = false;
+  if (STATE.lives > 0 && !STATE.asteroid) spawnAsteroid();
 }
 
 function buildBadgesRow(stats) {
