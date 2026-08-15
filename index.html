@@ -1078,7 +1078,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v34';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1796,7 +1796,19 @@ function spawnAsteroid() {
   } else {
     asteroid.textContent = STATE.currentProblem;
   }
-  asteroid.style.left = (Math.random() * (window.innerWidth - 110) + 10) + 'px';
+  const isBossSpawn = enemyType.id === 'boss';
+  // Boss svever sidelengs i en jevn sinusbølge i stedet for å stå stille -
+  // hold god avstand til kantene så den ikke svaier utenfor skjermen
+  const waveAmplitude = 70;
+  const minLeft = 10, maxLeft = window.innerWidth - 110;
+  let bossCenterLeft = (minLeft + maxLeft) / 2;
+  if (isBossSpawn) {
+    const minCenter = minLeft + waveAmplitude, maxCenter = maxLeft - waveAmplitude;
+    bossCenterLeft = minCenter < maxCenter
+      ? Math.random() * (maxCenter - minCenter) + minCenter
+      : (minLeft + maxLeft) / 2;
+  }
+  asteroid.style.left = (isBossSpawn ? bossCenterLeft : (Math.random() * (maxLeft - minLeft) + minLeft)) + 'px';
   asteroid.style.top = '-100px';
   game.appendChild(asteroid);
   STATE.asteroid = asteroid;
@@ -1808,13 +1820,26 @@ function spawnAsteroid() {
   const gameTop = game.getBoundingClientRect().top;
   const fallTarget = (shipTop - gameTop) - 30; // litt over skipet
   const baseDuration = Math.max(8000 - STATE.problemsAnswered * 100, 4500);
-  // Boss får litt mer tid - den krever flere riktige svar på rad
-  const bossBonus = enemyType.id === 'boss' ? 1.25 : 1;
+  // Boss synker mye saktere - den krever flere riktige svar på rad og skal
+  // rekke å svai innom noen bølger på veien ned
+  const bossBonus = isBossSpawn ? 1.7 : 1;
   const duration = Math.round(baseDuration * STATE.speedMultiplier * bossBonus);
   asteroid.animate([
     { top: '-100px' },
     { top: fallTarget + 'px' }
   ], { duration, fill: 'forwards', easing: 'linear' });
+
+  if (isBossSpawn) {
+    const cycles = 3;
+    const steps = 24;
+    const waveKeyframes = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = bossCenterLeft + waveAmplitude * Math.sin(t * Math.PI * 2 * cycles);
+      waveKeyframes.push({ left: `${x}px`, offset: t });
+    }
+    asteroid.animate(waveKeyframes, { duration, fill: 'forwards', easing: 'linear' });
+  }
 
   // Sjekk kollisjon
   scheduleCollision(asteroid, duration);
