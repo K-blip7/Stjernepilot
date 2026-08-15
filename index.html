@@ -1029,7 +1029,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v26';
+const APP_VERSION = 'v27';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -2300,11 +2300,12 @@ function quitGame() {
   // Gå til hovedmeny
   document.getElementById('gameover').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
+  // Lagre gullmynter/romskip uansett - ikke bare når man kvalifiserer til Hall of Fame
+  saveProgress();
   // Selv om man avslutter tidlig (ikke går tom for liv): sjekk om
   // scoren likevel kvalifiserer til Hall of Fame
   const finalScore = STATE.score;
   if (checkHallOfFame(finalScore)) {
-    saveProgress();
     // Sjekk at man fortsatt står på hovedmenyen når tiden er ute - man kan
     // ha rukket å gå videre til f.eks. statistikk-siden i mellomtiden
     setTimeout(() => {
