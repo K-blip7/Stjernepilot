@@ -994,6 +994,13 @@
         <span style="color:#ffffff88;font-size:13px;">Sampling+:</span>
         <a href="https://freesound.org/people/Michel88/sounds/76969/" target="_blank" rel="noopener" style="color:#7ee0ff;">Michel88</a><br>
         <span style="color:#ffffff88;font-size:13px;">+ 3 lyder under CC0 (offentlig eiendom)</span></p>
+      <p style="margin-bottom:18px;">😭 Boss-beseiret-lyder: ni ulike opptak, tilfeldig valgt<br>
+        <span style="color:#ffffff88;font-size:13px;">CC BY-NC 4.0:</span>
+        <a href="https://freesound.org/people/gumballworld/sounds/387409/" target="_blank" rel="noopener" style="color:#7ee0ff;">gumballworld</a>,
+        <a href="https://freesound.org/people/alphatone/sounds/394804/" target="_blank" rel="noopener" style="color:#7ee0ff;">alphatone</a>,
+        <span style="color:#ffffff88;font-size:13px;">CC BY-NC 3.0:</span>
+        <a href="https://freesound.org/people/scuzzpuck/sounds/40838/" target="_blank" rel="noopener" style="color:#7ee0ff;">scuzzpuck</a><br>
+        <span style="color:#ffffff88;font-size:13px;">+ 6 lyder under CC0 (offentlig eiendom)</span></p>
       <p>💻 Prosjektet på GitHub:<br>
         <a href="https://github.com/K-blip7/Stjernepilot" target="_blank" rel="noopener" style="color:#7ee0ff;">github.com/K-blip7/Stjernepilot</a></p>
     </div>
@@ -1071,7 +1078,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v31';
+const APP_VERSION = 'v32';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1157,11 +1164,6 @@ const AUDIO = {
   ufo() {
     playRandomAnimalSound('ufo');
   },
-  // Boss-treff: kraftig, dramatisk slag
-  boss() {
-    this.tone({ freq: 100, freqEnd: 50, type: 'sawtooth', duration: 0.35, volume: 0.3, attack: 0.01 });
-    this.noise({ duration: 0.3, volume: 0.2, filterFreq: 800, filterQ: 0.6 });
-  },
   // Game over
   gameOver() {
     this.tone({ freq: 440, freqEnd: 220, type: 'triangle', duration: 0.3, volume: 0.2 });
@@ -1230,6 +1232,13 @@ const ANIMAL_SOUNDS = {
   bossHit: {
     urls: ['./audio/boss/boss-hit1.mp3', './audio/boss/boss-hit2.mp3', './audio/boss/boss-hit3.mp3',
            './audio/boss/boss-hit4.mp3', './audio/boss/boss-hit5.mp3', './audio/boss/boss-hit6.mp3'],
+    buffers: null,
+    loadingPromise: null,
+  },
+  bossDefeat: {
+    urls: ['./audio/boss/boss-defeat1.mp3', './audio/boss/boss-defeat2.mp3', './audio/boss/boss-defeat3.mp3',
+           './audio/boss/boss-defeat4.mp3', './audio/boss/boss-defeat5.mp3', './audio/boss/boss-defeat6.mp3',
+           './audio/boss/boss-defeat7.mp3', './audio/boss/boss-defeat8.mp3', './audio/boss/boss-defeat9.mp3'],
     buffers: null,
     loadingPromise: null,
   },
@@ -1836,7 +1845,8 @@ function handleAnswer(choice, btn) {
     // Spill dyrelyd/boss-lyd hvis relevant
     if (isBoss) {
       if (bossDefeated) {
-        setTimeout(() => AUDIO.boss(), 150);
+        // Treff 3 (beseiret): tilfeldig ekte "hyl"-lyd, så seiersfanfaren
+        setTimeout(() => playRandomAnimalSound('bossDefeat', 0.7), 150);
         setTimeout(() => AUDIO.win(), 450);
       } else {
         // Treff 1 og 2: tilfeldig ekte reaksjonslyd (se credits på hovedskjermen)
