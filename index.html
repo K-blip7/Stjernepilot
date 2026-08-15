@@ -1041,7 +1041,7 @@
   </div>
 
   <!-- Hangar -->
-  <div class="modal" id="hangar-modal" style="display:none;">
+  <div class="modal" id="hangar-modal" style="display:none; overflow-y:auto; justify-content:flex-start; padding-top:calc(var(--safe-top) + 16px);">
     <h1 style="font-size: 28px;">HANGAR</h1>
     <div class="subtitle">VELG ROMSKIP</div>
     <div id="hangar-stars" style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:#ffd84a;text-shadow:0 0 10px #ffd84a88;margin-bottom:12px;"></div>
@@ -1078,7 +1078,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v35';
+const APP_VERSION = 'v36';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1423,12 +1423,17 @@ function pickEnemyType() {
 
 // Romskip-design
 const SHIPS = [
-  { name: 'Falken',  cost: 0,   color: '#7ee0ff' },
-  { name: 'Bil',     cost: 10,  color: '#ffd84a' },
-  { name: 'Drage',   cost: 25,  color: '#ff6b9d' },
-  { name: 'Jetfly',  cost: 50,  color: '#a06bff' },
-  { name: 'Flamme',  cost: 80,  color: '#ff5533' },
-  { name: 'Rakett',  cost: 120, color: '#4aff8e' },
+  { name: 'Falken',       cost: 0,   color: '#7ee0ff' },
+  { name: 'Bil',          cost: 8,   color: '#ffd84a' },
+  { name: 'Drage',        cost: 15,  color: '#ff6b9d' },
+  { name: 'Jetfly',       cost: 25,  color: '#a06bff' },
+  { name: 'Flamme',       cost: 35,  color: '#ff5533' },
+  { name: 'Rakett',       cost: 50,  color: '#4aff8e' },
+  { name: 'Virus',        cost: 65,  color: '#b6ff2e' },
+  { name: 'Stjernejager', cost: 80,  color: '#c0c8dc' },
+  { name: 'Astronaut',    cost: 100, color: '#ff8c42' },
+  { name: 'Stråhatt',     cost: 120, color: '#ff3b3b' },
+  { name: 'Jetmek',       cost: 150, color: '#4d94ff' },
 ];
 
 // Unikt SVG-design per skip (idx = indeks i SHIPS)
@@ -1614,6 +1619,168 @@ function shipSVG(color, idx = 0) {
       <circle cx="30" cy="16" r="2" fill="#ff3366" stroke="#fff" stroke-width="0.5"/>
       <circle cx="22" cy="17" r="1.5" fill="#3399ff" stroke="#fff" stroke-width="0.5"/>
       <circle cx="38" cy="17" r="1.5" fill="#33ff99" stroke="#fff" stroke-width="0.5"/>
+    </svg>`;
+
+    // 6: Virus – piggete kule med slemt ansikt
+    case 6: {
+      const spikes = Array.from({ length: 10 }).map((_, i) => {
+        const angle = (i / 10) * Math.PI * 2;
+        const ix = (30 + Math.cos(angle) * 17).toFixed(1), iy = (35 + Math.sin(angle) * 17).toFixed(1);
+        const ox = (30 + Math.cos(angle) * 24).toFixed(1), oy = (35 + Math.sin(angle) * 24).toFixed(1);
+        return `<line x1="${ix}" y1="${iy}" x2="${ox}" y2="${oy}" stroke="${color}" stroke-width="2.5"/><circle cx="${ox}" cy="${oy}" r="4" fill="${color}" stroke="#fff" stroke-width="1"/>`;
+      }).join('');
+      return `<svg viewBox="0 0 60 70">
+        <defs>
+          <radialGradient id="g${id}" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="${color}"/>
+            <stop offset="100%" stop-color="${color}77"/>
+          </radialGradient>
+        </defs>
+        ${spikes}
+        <circle cx="30" cy="35" r="17" fill="url(#g${id})" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="24" cy="30" r="2" fill="#fff" opacity="0.3"/>
+        <circle cx="36" cy="40" r="2.5" fill="#fff" opacity="0.25"/>
+        <ellipse cx="25" cy="33" rx="3" ry="3.5" fill="#fff"/>
+        <ellipse cx="35" cy="33" rx="3" ry="3.5" fill="#fff"/>
+        <circle cx="25" cy="34" r="1.6" fill="#111"/>
+        <circle cx="35" cy="34" r="1.6" fill="#111"/>
+        <path d="M23 41 Q30 46 37 41" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    // 7: Stjernejager – X-formede vinger, inspirert av klassiske rom-jagerfly
+    case 7: return `<svg viewBox="0 0 60 70">
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}"/>
+          <stop offset="100%" stop-color="#333344"/>
+        </linearGradient>
+      </defs>
+      <!-- Haleflammer -->
+      <path d="M27 60 L29 68 L30 62 L31 68 L33 60" fill="#66ccff" opacity="0.9"/>
+      <!-- Fuselage -->
+      <rect x="26" y="8" width="8" height="46" rx="3" fill="url(#g${id})" stroke="#fff" stroke-width="1.2"/>
+      <!-- Nese -->
+      <path d="M26 10 L30 2 L34 10 Z" fill="${color}" stroke="#fff" stroke-width="1"/>
+      <!-- Astromech-kuppel -->
+      <circle cx="30" cy="46" r="5" fill="#e0e0e0" stroke="#888" stroke-width="1"/>
+      <!-- Cockpit -->
+      <ellipse cx="30" cy="20" rx="3.5" ry="6" fill="#aaeeff" opacity="0.85" stroke="#fff" stroke-width="0.8"/>
+      <!-- Fire X-vinger -->
+      <path d="M26 26 L2 14 L6 22 L26 34 Z" fill="${color}" stroke="#fff" stroke-width="1"/>
+      <path d="M34 26 L58 14 L54 22 L34 34 Z" fill="${color}" stroke="#fff" stroke-width="1"/>
+      <path d="M26 36 L2 48 L6 40 L26 32 Z" fill="${color}" stroke="#fff" stroke-width="1" opacity="0.95"/>
+      <path d="M34 36 L58 48 L54 40 L34 32 Z" fill="${color}" stroke="#fff" stroke-width="1" opacity="0.95"/>
+      <!-- Kanoner på vingetupper -->
+      <rect x="0" y="11" width="8" height="2.5" rx="1" fill="#ffeb3b"/>
+      <rect x="52" y="11" width="8" height="2.5" rx="1" fill="#ffeb3b"/>
+      <rect x="0" y="46" width="8" height="2.5" rx="1" fill="#ffeb3b"/>
+      <rect x="52" y="46" width="8" height="2.5" rx="1" fill="#ffeb3b"/>
+    </svg>`;
+
+    // 8: Astronaut – romdrakt med hjelm og pistol
+    case 8: return `<svg viewBox="0 0 60 70">
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f0f0f0"/>
+          <stop offset="100%" stop-color="#c0c0c8"/>
+        </linearGradient>
+      </defs>
+      <!-- Ryggsekk -->
+      <rect x="20" y="26" width="20" height="24" rx="4" fill="${color}" stroke="#fff" stroke-width="1"/>
+      <!-- Kropp/drakt -->
+      <rect x="17" y="24" width="26" height="30" rx="10" fill="url(#g${id})" stroke="${color}" stroke-width="2"/>
+      <!-- Belte -->
+      <rect x="17" y="42" width="26" height="5" fill="${color}" opacity="0.8"/>
+      <!-- Ben -->
+      <rect x="19" y="52" width="8" height="14" rx="3" fill="url(#g${id})" stroke="${color}" stroke-width="1.5"/>
+      <rect x="33" y="52" width="8" height="14" rx="3" fill="url(#g${id})" stroke="${color}" stroke-width="1.5"/>
+      <!-- Venstre arm -->
+      <rect x="9" y="28" width="8" height="18" rx="4" fill="url(#g${id})" stroke="${color}" stroke-width="1.5"/>
+      <!-- Høyre arm (holder pistol) -->
+      <rect x="41" y="24" width="8" height="16" rx="4" fill="url(#g${id})" stroke="${color}" stroke-width="1.5" transform="rotate(-20 45 32)"/>
+      <!-- Pistol -->
+      <path d="M47 18 L54 16 L54 20 L58 20 L58 23 L47 24 Z" fill="#444" stroke="#fff" stroke-width="0.8"/>
+      <circle cx="57" cy="21.5" r="1" fill="#66ccff"/>
+      <!-- Hjelm -->
+      <circle cx="30" cy="14" r="12" fill="url(#g${id})" stroke="${color}" stroke-width="2"/>
+      <!-- Visir -->
+      <ellipse cx="30" cy="14" rx="8" ry="7" fill="#111a33"/>
+      <ellipse cx="27" cy="11" rx="3" ry="2" fill="#66ccff" opacity="0.7"/>
+      <!-- Antenne -->
+      <line x1="38" y1="6" x2="41" y2="1" stroke="${color}" stroke-width="1.5"/>
+      <circle cx="41" cy="1" r="1.3" fill="#ff5555"/>
+    </svg>`;
+
+    // 9: Stråhatt – blid pirat med stråhatt (generisk pirat-arketype)
+    case 9: return `<svg viewBox="0 0 60 70">
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}"/>
+          <stop offset="100%" stop-color="#990000"/>
+        </linearGradient>
+      </defs>
+      <!-- Ben -->
+      <rect x="21" y="52" width="7" height="14" rx="2" fill="#2255aa"/>
+      <rect x="32" y="52" width="7" height="14" rx="2" fill="#2255aa"/>
+      <!-- Sandaler -->
+      <ellipse cx="24.5" cy="67" rx="5" ry="2" fill="#7a4a20"/>
+      <ellipse cx="35.5" cy="67" rx="5" ry="2" fill="#7a4a20"/>
+      <!-- Kropp / rød vest -->
+      <path d="M18 30 Q30 24 42 30 L40 54 Q30 58 20 54 Z" fill="url(#g${id})" stroke="#7a0000" stroke-width="1.2"/>
+      <!-- Bar mage -->
+      <path d="M25 34 L26 50 Q30 52 34 50 L35 34 Z" fill="#f2c48b"/>
+      <!-- Armer -->
+      <rect x="10" y="30" width="8" height="20" rx="4" fill="#f2c48b" stroke="#7a0000" stroke-width="1"/>
+      <rect x="42" y="30" width="8" height="20" rx="4" fill="#f2c48b" stroke="#7a0000" stroke-width="1"/>
+      <!-- Hode -->
+      <circle cx="30" cy="20" r="11" fill="#f2c48b" stroke="#d19a5f" stroke-width="1"/>
+      <!-- Smil -->
+      <path d="M24 23 Q30 28 36 23" stroke="#7a3300" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <!-- Øyne -->
+      <circle cx="26" cy="18" r="1.4" fill="#222"/>
+      <circle cx="34" cy="18" r="1.4" fill="#222"/>
+      <!-- Stråhatt -->
+      <ellipse cx="30" cy="11" rx="17" ry="4.5" fill="#e8c468" stroke="#a9803a" stroke-width="1.2"/>
+      <path d="M20 10 Q30 -2 40 10 Q34 5 30 5 Q26 5 20 10Z" fill="#f0d080" stroke="#a9803a" stroke-width="1.2"/>
+      <!-- Rødt bånd på hatten -->
+      <rect x="21" y="8.5" width="18" height="3" fill="${color}"/>
+    </svg>`;
+
+    // 10: Jetmek – flygende mek-drakt med brystlys og støvel-thrustere
+    case 10: return `<svg viewBox="0 0 60 70">
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}"/>
+          <stop offset="100%" stop-color="#333"/>
+        </linearGradient>
+      </defs>
+      <!-- Eksos fra støvler -->
+      <path d="M18 62 Q20 70 23 64 Q25 70 27 63" fill="#66ccff" opacity="0.9"/>
+      <path d="M33 63 Q35 70 37 64 Q40 70 42 62" fill="#66ccff" opacity="0.9"/>
+      <!-- Ben/støvler -->
+      <rect x="18" y="48" width="10" height="16" rx="3" fill="url(#g${id})" stroke="#fff" stroke-width="1.2"/>
+      <rect x="32" y="48" width="10" height="16" rx="3" fill="url(#g${id})" stroke="#fff" stroke-width="1.2"/>
+      <!-- Kropp/brystplate -->
+      <path d="M17 22 Q30 16 43 22 L41 50 Q30 55 19 50 Z" fill="url(#g${id})" stroke="#fff" stroke-width="1.5"/>
+      <!-- Kjerne-lys -->
+      <circle cx="30" cy="32" r="5" fill="#66ccff" opacity="0.9"/>
+      <circle cx="30" cy="32" r="2.5" fill="#fff"/>
+      <!-- Skulderplater -->
+      <ellipse cx="14" cy="24" rx="7" ry="8" fill="${color}" stroke="#fff" stroke-width="1.2"/>
+      <ellipse cx="46" cy="24" rx="7" ry="8" fill="${color}" stroke="#fff" stroke-width="1.2"/>
+      <!-- Armer med thrustere -->
+      <rect x="6" y="28" width="8" height="18" rx="4" fill="url(#g${id})" stroke="#fff" stroke-width="1"/>
+      <rect x="46" y="28" width="8" height="18" rx="4" fill="url(#g${id})" stroke="#fff" stroke-width="1"/>
+      <path d="M7 46 Q10 54 13 47" fill="#66ccff" opacity="0.85"/>
+      <path d="M47 47 Q50 54 53 46" fill="#66ccff" opacity="0.85"/>
+      <!-- Hjelm -->
+      <path d="M20 14 Q30 4 40 14 Q40 22 30 24 Q20 22 20 14Z" fill="url(#g${id})" stroke="#fff" stroke-width="1.5"/>
+      <!-- Visir -->
+      <path d="M23 13 Q30 9 37 13 Q36 18 30 19 Q24 18 23 13Z" fill="#66ccff" opacity="0.9"/>
+      <!-- Antenne -->
+      <line x1="30" y1="4" x2="30" y2="0" stroke="${color}" stroke-width="1.5"/>
+      <circle cx="30" cy="0" r="1.3" fill="#ff5555"/>
     </svg>`;
 
     default: return shipSVG(color, 0);
