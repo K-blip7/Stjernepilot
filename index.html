@@ -1029,7 +1029,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v27';
+const APP_VERSION = 'v28';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1511,13 +1511,10 @@ function shipSVG(color, idx = 0) {
 // Oppdragsrapport-statistikken), slik at vanskelige stykker dukker tydelig
 // oftere opp enn godt mestrede - uten å bli ren pugging av det vanskelige.
 function factWeight(key, stats) {
-  const data = stats[key];
-  if (!data) return 3; // aldri sett - litt ekstra vekt for å utforske nye stykker
-  const total = data.correct + data.wrong;
-  if (total === 0) return 3;
-  const pct = data.correct / total;
-  if (pct < 0.5) return 6;      // vanskelig - vis mye oftere
-  if (pct < 0.8) return 2;      // ok
+  const acc = factAccuracy(stats[key]);
+  if (!acc) return 3; // aldri sett - litt ekstra vekt for å utforske nye stykker
+  if (acc.pct < 0.5) return 6;  // vanskelig - vis mye oftere
+  if (acc.pct < 0.8) return 2;  // ok
   return 0.3;                   // godt mestret - vis sjeldnere, men ikke aldri
 }
 
@@ -2599,12 +2596,47 @@ function saveStats(stats) {
   try { localStorage.setItem('mathStats', JSON.stringify(stats)); } catch(e) {}
 }
 
+// Rutefarge/merker/spørsmålsvekting skal reflektere hvor godt man kan et
+// stykke NÅ, ikke summen av alle svar noensinne - ellers kan gamle feil fra
+// da man lærte stykket henge igjen og gjøre det nesten umulig å nå 80% igjen.
+// Derfor ser vi bare på de siste RECENT_WINDOW forsøkene per stykke.
+const RECENT_WINDOW = 8;
+
+// Eldre lagrede data har ingen `recent`-liste ennå - fyll den med et
+// øyeblikksbilde av dagens treffprosent, slik at fargen ikke plutselig
+// hopper når vi går over til å vekte ferske svar tyngre. Feilene plasseres
+// først (eldst) og riktige sist (ferskest) - det er en rimelig antagelse at
+// man har blitt bedre over tid, og gjør at nye riktige svar raskt teller.
+function backfillRecent(data) {
+  const total = data.correct + data.wrong;
+  if (total === 0) return [];
+  const size = Math.min(total, RECENT_WINDOW);
+  const correctCount = Math.round(size * (data.correct / total));
+  const wrongCount = size - correctCount;
+  const arr = [];
+  for (let i = 0; i < wrongCount; i++) arr.push(false);
+  for (let i = 0; i < correctCount; i++) arr.push(true);
+  return arr;
+}
+
+// Returnerer { pct, attempts } basert på de siste forsøkene, eller null hvis
+// stykket aldri er sett
+function factAccuracy(data) {
+  if (!data) return null;
+  const recent = (data.recent && data.recent.length) ? data.recent : backfillRecent(data);
+  if (recent.length === 0) return null;
+  return { pct: recent.filter(Boolean).length / recent.length, attempts: recent.length };
+}
+
 function recordAnswer(a, b, correct) {
   const stats = loadStats();
   const key = `${Math.min(a,b)}x${Math.max(a,b)}`;
-  if (!stats[key]) stats[key] = { correct: 0, wrong: 0 };
+  if (!stats[key]) stats[key] = { correct: 0, wrong: 0, recent: [] };
+  if (!stats[key].recent) stats[key].recent = backfillRecent(stats[key]);
   if (correct) stats[key].correct++;
   else stats[key].wrong++;
+  stats[key].recent.push(correct);
+  if (stats[key].recent.length > RECENT_WINDOW) stats[key].recent.shift();
   saveStats(stats);
 }
 
@@ -2625,11 +2657,8 @@ function closeStats() {
 function isTableMastered(n, stats) {
   for (let b = 1; b <= 10; b++) {
     const key = `${Math.min(n,b)}x${Math.max(n,b)}`;
-    const data = stats[key];
-    if (!data) return false;
-    const total = data.correct + data.wrong;
-    if (total < 3) return false;
-    if (data.correct / total < 0.8) return false;
+    const acc = factAccuracy(stats[key]);
+    if (!acc || acc.attempts < 3 || acc.pct < 0.8) return false;
   }
   return true;
 }
@@ -2728,20 +2757,19 @@ function buildStatsView() {
     for (let col = 1; col <= 10; col++) {
       const key = `${Math.min(row,col)}x${Math.max(row,col)}`;
       const data = stats[key] || { correct: 0, wrong: 0 };
-      const total = data.correct + data.wrong;
+      const acc = factAccuracy(stats[key]);
       const cell = document.createElement('div');
       cell.className = 'stats-cell';
-      if (total === 0) {
+      if (!acc) {
         cell.classList.add('never');
         cell.textContent = '';
         cell.title = `${row}×${col}: Ikke sett`;
       } else {
-        const pct = data.correct / total;
-        if (pct >= 0.8) cell.classList.add('great');
-        else if (pct >= 0.5) cell.classList.add('good');
+        if (acc.pct >= 0.8) cell.classList.add('great');
+        else if (acc.pct >= 0.5) cell.classList.add('good');
         else cell.classList.add('hard');
-        cell.textContent = total;
-        cell.title = `${row}×${col}: ${data.correct}✅ ${data.wrong}❌`;
+        cell.textContent = data.correct + data.wrong;
+        cell.title = `${row}×${col}: ${data.correct}✅ ${data.wrong}❌ totalt (siste ${acc.attempts}: ${Math.round(acc.pct * 100)}% riktig)`;
       }
       grid.appendChild(cell);
     }
