@@ -478,6 +478,32 @@
     50% { transform: translateY(-5px) rotate(3deg); }
   }
 
+  /* Boss - større, tydeligere og med treff-indikatorer */
+  .asteroid.boss .emoji {
+    font-size: 92px;
+    animation: bob 1.5s ease-in-out infinite, boss-glow 1s ease-in-out infinite alternate;
+  }
+  @keyframes boss-glow {
+    from { filter: drop-shadow(0 0 14px #ffd84a); }
+    to   { filter: drop-shadow(0 0 30px #ff3366); }
+  }
+  .asteroid.boss .boss-label {
+    position: absolute; top: -26px; left: 50%; transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900;
+    color: #ff3366; letter-spacing: 3px; text-shadow: 0 0 10px #ff3366;
+  }
+  .asteroid.boss .boss-health {
+    position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px;
+  }
+  .asteroid.boss .boss-health .pip {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #ffffff22; border: 1px solid #ffffff66;
+  }
+  .asteroid.boss .boss-health .pip.filled {
+    background: #ff3366; border-color: #ff3366; box-shadow: 0 0 8px #ff3366;
+  }
+
   .asteroid.pig { color: #ff9ec7; }
   .asteroid.cow { color: #ffffff; }
   .asteroid.chicken { color: #ffeb3b; }
@@ -1037,7 +1063,7 @@
 
 <script>
 // Øk denne ved hver publisering til GitHub (vis samme tall i sw.js CACHE_VERSION)
-const APP_VERSION = 'v29';
+const APP_VERSION = 'v30';
 
 // ===== Lyd-system (Web Audio API) =====
 const AUDIO = {
@@ -1122,6 +1148,11 @@ const AUDIO = {
   // UFO: tilfeldig ekte sci-fi-lyd (ni ulike opptak, se credits på hovedskjermen)
   ufo() {
     playRandomAnimalSound('ufo');
+  },
+  // Boss-treff: kraftig, dramatisk slag
+  boss() {
+    this.tone({ freq: 100, freqEnd: 50, type: 'sawtooth', duration: 0.35, volume: 0.3, attack: 0.01 });
+    this.noise({ duration: 0.3, volume: 0.2, filterFreq: 800, filterQ: 0.6 });
   },
   // Game over
   gameOver() {
@@ -1294,7 +1325,16 @@ const STATE = {
   recentProblems: [],
   speedMultiplier: 1.0,  // 1.0 = normal, lavere = raskere (kortere duration)
   superMode: false,      // true når 25-streak er oppnådd
+  enemiesSinceBoss: 0,   // teller opp mot BOSS_INTERVAL
+  bossActive: false,     // true mens en boss-kamp pågår (kan strekke seg over flere spawn)
+  bossHitsLanded: 0,     // riktige svar på rad landet på nåværende boss (trenger 3)
 };
+
+// Boss: dukker opp hvert BOSS_INTERVAL. stykke og krever 3 riktige svar PÅ RAD
+// for å beseire - ett feil svar og den kommer igjen (telleren nullstilles, men
+// bossen forsvinner ikke). Ikke med i den vanlige vektede fiende-poolen under.
+const BOSS_INTERVAL = 15;
+const BOSS_ENEMY = { id: 'boss', emoji: '👾', multiplier: 8, sound: null, soundColor: '#ff3366' };
 
 // Fiendetyper - asteroide er vanlig, dyrene er bonus
 const ENEMY_TYPES = [
@@ -1596,6 +1636,9 @@ function startGame() {
   STATE.recentProblems = [];
   STATE.speedMultiplier = 1.0;
   STATE.superMode = false;
+  STATE.enemiesSinceBoss = 0;
+  STATE.bossActive = false;
+  STATE.bossHitsLanded = 0;
   updateHUD();
   renderShip();
   spawnAsteroid();
@@ -1653,6 +1696,8 @@ function scheduleCollision(asteroid, duration) {
     if (STATE.asteroid === asteroid) {
       // Asteroide traff
       loseLife();
+      // Boss som ikke ble besvart i tide teller som bom - nullstill telleren
+      if (STATE.currentEnemy && STATE.currentEnemy.id === 'boss') STATE.bossHitsLanded = 0;
       asteroid.remove();
       STATE.asteroid = null;
       if (STATE.lives > 0) setTimeout(spawnAsteroid, 800);
@@ -1696,14 +1741,33 @@ function spawnAsteroid() {
   STATE.currentA = problem.a;
   STATE.currentB = problem.b;
 
-  const enemyType = pickEnemyType();
+  let enemyType;
+  if (STATE.bossActive) {
+    enemyType = BOSS_ENEMY; // samme boss-kamp fortsetter til den er beseiret
+  } else {
+    STATE.enemiesSinceBoss++;
+    if (STATE.enemiesSinceBoss >= BOSS_INTERVAL) {
+      STATE.enemiesSinceBoss = 0;
+      STATE.bossActive = true;
+      STATE.bossHitsLanded = 0;
+      enemyType = BOSS_ENEMY;
+    } else {
+      enemyType = pickEnemyType();
+    }
+  }
   STATE.currentEnemy = enemyType;
 
   const asteroid = document.createElement('div');
   asteroid.className = 'asteroid';
   if (enemyType.emoji) {
     asteroid.classList.add('animal', enemyType.id);
-    asteroid.innerHTML = `<div class="emoji">${enemyType.emoji}</div><div class="problem-tag">${STATE.currentProblem}</div>`;
+    if (enemyType.id === 'boss') {
+      const pips = Array.from({ length: 3 }, (_, i) =>
+        `<span class="pip${i < STATE.bossHitsLanded ? ' filled' : ''}"></span>`).join('');
+      asteroid.innerHTML = `<div class="boss-label">BOSS</div><div class="emoji">${enemyType.emoji}</div><div class="boss-health">${pips}</div><div class="problem-tag">${STATE.currentProblem}</div>`;
+    } else {
+      asteroid.innerHTML = `<div class="emoji">${enemyType.emoji}</div><div class="problem-tag">${STATE.currentProblem}</div>`;
+    }
   } else {
     asteroid.textContent = STATE.currentProblem;
   }
@@ -1719,7 +1783,9 @@ function spawnAsteroid() {
   const gameTop = game.getBoundingClientRect().top;
   const fallTarget = (shipTop - gameTop) - 30; // litt over skipet
   const baseDuration = Math.max(8000 - STATE.problemsAnswered * 100, 4500);
-  const duration = Math.round(baseDuration * STATE.speedMultiplier);
+  // Boss får litt mer tid - den krever flere riktige svar på rad
+  const bossBonus = enemyType.id === 'boss' ? 1.25 : 1;
+  const duration = Math.round(baseDuration * STATE.speedMultiplier * bossBonus);
   asteroid.animate([
     { top: '-100px' },
     { top: fallTarget + 'px' }
@@ -1750,14 +1816,22 @@ function handleAnswer(choice, btn) {
     if (navigator.vibrate) navigator.vibrate(50);
     shootLaser();
     const enemy = STATE.currentEnemy;
-    // Spill dyrelyd hvis det er et dyr
-    if (enemy && AUDIO[enemy.id]) {
+    const isBoss = enemy && enemy.id === 'boss';
+    if (isBoss) STATE.bossHitsLanded++;
+    const bossDefeated = isBoss && STATE.bossHitsLanded >= 3;
+    // Spill dyrelyd/boss-lyd hvis relevant
+    if (isBoss) {
+      setTimeout(() => AUDIO.boss(), 150);
+      if (bossDefeated) setTimeout(() => AUDIO.win(), 450);
+    } else if (enemy && AUDIO[enemy.id]) {
       setTimeout(() => AUDIO[enemy.id](), 150);
     }
     // Eksplosjon
     setTimeout(() => AUDIO.explosion(), 200);
-    // Vis dyrelyd FØR asteroiden ødelegges (slik at vi har posisjonen)
-    if (enemy && enemy.sound) {
+    // Vis dyrelyd/boss-status FØR asteroiden ødelegges (slik at vi har posisjonen)
+    if (isBoss) {
+      showAnimalSound(bossDefeated ? 'BESEIRET!' : `TREFF! ${STATE.bossHitsLanded}/3`, enemy.soundColor);
+    } else if (enemy && enemy.sound) {
       showAnimalSound(enemy.sound, enemy.soundColor);
     }
     setTimeout(() => destroyAsteroid(true), 200);
@@ -1798,10 +1872,21 @@ function handleAnswer(choice, btn) {
     }
     // UFO gir bonus-mynt
     if (enemy && enemy.id === 'ufo') dropStar();
+    // Boss beseiret: mynt-regn og tilbake til vanlige fiender
+    if (bossDefeated) {
+      STATE.bossActive = false;
+      STATE.bossHitsLanded = 0;
+      dropStar();
+      setTimeout(() => dropStar(), 150);
+      setTimeout(() => dropStar(), 300);
+    }
   } else {
     btn.classList.add('wrong');
     if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
     AUDIO.miss();
+    // Boss overlever et feil svar, men treff-telleren nullstilles - må starte
+    // 3-på-rad-kravet helt på nytt (bossen forsvinner ikke, den kommer igjen)
+    if (STATE.currentEnemy && STATE.currentEnemy.id === 'boss') STATE.bossHitsLanded = 0;
     // Marker riktig svar
     document.querySelectorAll('.answer-btn').forEach(b => {
       if (parseInt(b.textContent) === STATE.currentAnswer) b.classList.add('correct');
